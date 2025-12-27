@@ -1,0 +1,12 @@
+# Dati scaricati
+data/
+data/html_arxiv/
+data/html_pubmed/
+
+# Ambienti virtuali
+venv/
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
