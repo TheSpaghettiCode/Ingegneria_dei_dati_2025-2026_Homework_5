@@ -1,11 +1,11 @@
 # Sviluppo di un Sistema Avanzato di Ricerca su Articoli Scientifici
 
-## 📌 Descrizione del Progetto
+## Descrizione del Progetto
 Questo progetto implementa un motore di ricerca avanzato per articoli scientifici (nello specifico da [arXiv](https://arxiv.org)), trattando non solo il testo degli articoli, ma anche **Tabelle** e **Figure** come oggetti di "prima classe". Questo significa che è possibile cercare specificamente all'interno delle tabelle (didascalie, contenuto) e delle figure (didascalie), oltre alla classica ricerca full-text sugli articoli.
 
 Il sistema è stato progettato per il corso di Ingegneria dei Dati 2025-2026 (Homework 5).
 
-## 🚀 Funzionalità Principali
+## Funzionalità Principali
 1.  **Corpus Creation**: Script automatico per scaricare articoli in formato HTML da arXiv basati su query specifiche (es. "speech to text").
 2.  **Estrazione Dati**: Parsing avanzato dell'HTML per estrarre:
     *   **Articoli**: Metadati (titolo, autori, data, abstract) e testo completo.
@@ -16,7 +16,7 @@ Il sistema è stato progettato per il corso di Ingegneria dei Dati 2025-2026 (Ho
     *   **CLI (Command Line Interface)**: Per ricerche rapide da terminale.
     *   **Web UI**: Interfaccia web user-friendly basata su Flask per esplorare i risultati.
 
-## 📂 Struttura del Progetto
+## Struttura del Progetto
 
 ```text
 Ingegneria_dei_dati_2025-2026_Homework_5/
@@ -43,7 +43,7 @@ Ingegneria_dei_dati_2025-2026_Homework_5/
 └── README.md                   # Documentazione
 ```
 
-## 🛠️ Requisiti e Installazione
+## Requisiti e Installazione
 
 ### Prerequisiti
 *   Python 3.8 o superiore
@@ -91,7 +91,7 @@ Ingegneria_dei_dati_2025-2026_Homework_5/
 
     Attendi che Elasticsearch sia attivo su `http://localhost:9200`.
 
-## ⏯️ Come Eseguire il Sistema
+## Come Eseguire il Sistema
 
 ### 1. Creazione del Corpus (Download)
 Scarica gli articoli da arXiv. Di default cerca "speech to text".
@@ -130,7 +130,7 @@ python src/search/app.py
 Apri il browser all'indirizzo: **http://127.0.0.1:5000**
 
 
-## 🧠 Dettagli Implementativi
+## Dettagli Implementativi
 
 ### Estrazione (`extractor.py`)
 Utilizza `BeautifulSoup` per analizzare il DOM HTML generato da ArXiv (spesso convertito via LaTeXML).
