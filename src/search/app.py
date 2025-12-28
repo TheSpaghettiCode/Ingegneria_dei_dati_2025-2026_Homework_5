@@ -1,23 +1,32 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 import sys
 import os
 import requests
 from elasticsearch import Elasticsearch
 
-# Add src to path
+# Ensure internal modules can be imported
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from search.search_engine import SearchEngine
 
 app = Flask(__name__, template_folder='../ui/templates', static_folder='../ui/static')
+
+# Initialize Search Engine and Elasticsearch client
 engine = SearchEngine()
 es = Elasticsearch("http://localhost:9200")
 
 @app.route('/')
 def index():
+    """
+    Render availability of the main search dashboard.
+    """
     return render_template('index.html')
 
 @app.route('/api/stats')
 def stats():
+    """
+    API Endpoint to get current statistics of the corpus.
+    Returns the count of indexed Papers, Tables, and Figures.
+    """
     try:
         count_arts = es.count(index="articles")['count']
         count_tabs = es.count(index="tables")['count']
@@ -32,6 +41,10 @@ def stats():
 
 @app.route('/api/search')
 def search():
+    """
+    API Endpoint to perform search operations.
+    Accepts 'query' and 'index_type' as query parameters.
+    """
     query = request.args.get('query', '')
     index_type = request.args.get('index_type', 'articles')
     
@@ -58,6 +71,10 @@ def search():
 
 @app.route('/paper/<path:paper_id>')
 def paper_detail(paper_id):
+    """
+    Render a detail page for a specific paper.
+    Fetches Paper Metadata, Tables, and Figures associated with the given paper_id.
+    """
     # Fetch paper details
     res = es.search(index="articles", body={"query": {"term": {"_id": paper_id}}}, size=1)
     if not res['hits']['hits']:
@@ -66,15 +83,15 @@ def paper_detail(paper_id):
     paper = res['hits']['hits'][0]['_source']
     paper['id'] = paper_id
     
-    # Fetch tables
+    # Fetch associated tables
     tables_res = es.search(index="tables", body={"query": {"term": {"paper_id": paper_id}}}, size=100)
     tables = [t['_source'] for t in tables_res['hits']['hits']]
     
-    # Fetch figures
+    # Fetch associated figures
     figs_res = es.search(index="figures", body={"query": {"term": {"paper_id": paper_id}}}, size=100)
     figures = [f['_source'] for f in figs_res['hits']['hits']]
     
-    # Fix figure URLs for proxy
+    # Fix figure URLs for proxy use
     for f in figures:
         raw_url = f.get('url', '')
         if raw_url and not raw_url.startswith('http'):
@@ -84,6 +101,10 @@ def paper_detail(paper_id):
 
 @app.route('/api/image_proxy')
 def image_proxy():
+    """
+    Proxy endpoint to fetch images from ArXiv. Only used if direct loading fails.
+    Note: ArXiv often blocks this, so UI fallback to 'View Source' is preferred.
+    """
     url = request.args.get('url')
     if not url:
         return "Missing URL", 400
@@ -98,7 +119,6 @@ def image_proxy():
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
         
-        from flask import Response
         return Response(resp.content, resp.status_code, headers)
     except Exception as e:
         return str(e), 500

@@ -1,8 +1,19 @@
 from elasticsearch import Elasticsearch, helpers
 
 class IndexManager:
+    """
+    Manages Elasticsearch indices and handles the bulk indexing of data.
+    """
     def __init__(self, es_host="http://localhost:9200"):
+        """
+        Initialize the IndexManager.
+        
+        Args:
+            es_host (str): Elasticsearch server URL.
+        """
         self.es = Elasticsearch(es_host)
+        
+        # Define index schemas (mappings) for articles, tables, and figures
         self.indices = {
             "articles": {
                 "mappings": {
@@ -35,10 +46,7 @@ class IndexManager:
                         "url": {"type": "keyword"},
                         "caption": {"type": "text"},
                         "mentions": {"type": "text"},
-                        # context_paragraphs mentioned in point 5 for extraction, but not explicitly in point 7 for indexing?
-                        # Point 7: "url, paper_id, table_id (ID della figura...), caption, mentions".
-                        # Wait, point 5 says extract context. Point 7 says index Url, paper_id, ID, caption, mentions.
-                        # I will add context_paragraphs anyway as it's useful for search.
+                        # context_paragraphs included to provide semantic context during search
                         "context_paragraphs": {"type": "text"} 
                     }
                 }
@@ -46,6 +54,9 @@ class IndexManager:
         }
 
     def create_indices(self):
+        """
+        Create indices in Elasticsearch if they do not exist.
+        """
         for index_name, config in self.indices.items():
             if not self.es.indices.exists(index=index_name):
                 self.es.indices.create(index=index_name, body=config)
@@ -54,9 +65,16 @@ class IndexManager:
                 print(f"Index {index_name} already exists.")
 
     def index_data(self, paper_data, metadata):
+        """
+        Prepare and bulk index data for a single paper (Article + Tables + Figures).
+        
+        Args:
+            paper_data (dict): Result from Extractor.process_file().
+            metadata (dict): Metadata loaded from JSON sidecar.
+        """
         actions = []
         
-        # 1. Article Document
+        # 1. Prepare Article Document
         article_doc = {
             "_index": "articles",
             "_id": paper_data["paper_id"],
@@ -70,7 +88,7 @@ class IndexManager:
         }
         actions.append(article_doc)
         
-        # 2. Tables
+        # 2. Prepare Table Documents
         for tbl in paper_data["tables"]:
             table_doc = {
                 "_index": "tables",
@@ -85,7 +103,7 @@ class IndexManager:
             }
             actions.append(table_doc)
             
-        # 3. Figures
+        # 3. Prepare Figure Documents
         for fig in paper_data["figures"]:
             fig_doc = {
                 "_index": "figures",
@@ -95,13 +113,12 @@ class IndexManager:
                     "url": fig["url"],
                     "caption": fig["caption"],
                     "mentions": fig["mentions"],
-                     # Adding context if available, though strict requirement didn't list it for indexing, extraction asked for it.
                     "context_paragraphs": fig["context_paragraphs"]
                 }
             }
             actions.append(fig_doc)
             
-        # Bulk Index
+        # Execute Bulk Indexing
         if actions:
             helpers.bulk(self.es, actions)
             print(f"Indexed {len(actions)} documents for paper {paper_data['paper_id']}")

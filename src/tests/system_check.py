@@ -4,6 +4,9 @@ import os
 from elasticsearch import Elasticsearch
 
 def check_elasticsearch_connection(url="http://localhost:9200"):
+    """
+    Verify connectivity to the Elasticsearch instance.
+    """
     print(f"--- Checking Elasticsearch Connection ({url}) ---")
     try:
         resp = requests.get(url, timeout=2)
@@ -24,6 +27,9 @@ def check_elasticsearch_connection(url="http://localhost:9200"):
         return False
 
 def check_indices(es):
+    """
+    Check if the required indices (articles, tables, figures) exist and are not empty.
+    """
     print("\n--- Checking Indices Counts ---")
     indices = ["articles", "tables", "figures"]
     all_ok = True
@@ -42,6 +48,9 @@ def check_indices(es):
     return all_ok
 
 def check_image_access(paper_id="2306.12020v1", image_name="x1.png"):
+    """
+    Test direct access to ArXiv images to diagnose 403 Forbidden issues.
+    """
     print("\n--- Checking External Image Access (ArXiv) ---")
     url = f"https://arxiv.org/html/{paper_id}/{image_name}"
     headers = {
@@ -55,13 +64,16 @@ def check_image_access(paper_id="2306.12020v1", image_name="x1.png"):
             print(f"[\u2705] Image fetched successfully ({len(r.content)} bytes).")
             print("    ArXiv access is working.")
         elif r.status_code == 403:
-            print("[\u26A0\uFE0F] 403 Forbidden. Note: The Dashboard uses 'referrerpolicy' to bypass this in browsers, so it might still work in UI.")
+            print("[\u26A0\uFE0F] 403 Forbidden. Note: This confirms ArXiv blocks bots. The UI Fallback strategy handles this.")
         else:
             print(f"[\u274C] Failed with status: {r.status_code}")
     except Exception as e:
         print(f"[\u274C] Exception: {e}")
 
 def main():
+    """
+    Run all system health checks.
+    """
     print("=== SYSTEM HEALTH CHECK ===\n")
     
     es_alive = check_elasticsearch_connection()

@@ -546,7 +546,7 @@
                         </div>
                         <div class="figure-layout">
                             <div class="figure-img-container">
-                                ${src.url ? `<img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=Image+Load+Error';">` : '<div style="color:white">No Image URL</div>'}
+                                ${src.url ? `<div class="img-container" data-url="${src.url}"><img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="handleImgError(this, '${src.url}')"></div>` : '<div style="color:white">No Image URL</div>'}
                             </div>
                             <div>
                                 <div style="font-size:0.9rem; color:var(--secondary); margin-bottom:0.5rem;">
@@ -584,6 +584,19 @@
         function createList(items, quote = false) {
             if (!items || items.length === 0) return 'None';
             return items.map(i => `<div style="margin-bottom:0.5rem; ${quote ? 'padding-left:0.5rem; border-left:2px solid var(--border);' : ''}">${i}</div>`).join('');
+        }
+
+        function handleImgError(img, paperId) {
+            const container = img.parentElement;
+            container.innerHTML = `
+                <div style="padding:1.5rem; background:#fff1f2; text-align:center; border:1px dashed #e11d48; border-radius:0.5rem;">
+                    <i class="fa-solid fa-ban" style="font-size:1.5rem; color:#e11d48; margin-bottom:0.5rem; display:block;"></i>
+                    <p style="margin:0; font-size:0.8rem; color:#be123c;">Image blocked by ArXiv</p>
+                    <a href="https://arxiv.org/html/${paperId}" target="_blank" style="display:inline-block; margin-top:0.5rem; color:#e11d48; font-weight:600; text-decoration:underline; font-size:0.8rem;">
+                        Open Paper to View Figure <i class="fa-solid fa-external-link-alt"></i>
+                    </a>
+                </div>
+            `;
         }
     </script>
 </body>

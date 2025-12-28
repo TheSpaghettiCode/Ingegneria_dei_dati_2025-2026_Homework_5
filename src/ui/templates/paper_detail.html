@@ -151,14 +151,35 @@
                 <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">ID: {{ f.figure_id }}</div>
                 <div class="caption">{{ f.caption }}</div>
                 {% if f.url %}
-                <img src="/api/image_proxy?url={{ f.url|urlencode }}" alt="Figure">
+                <div class="img-container" data-url="{{ f.url }}">
+                    <img src="/api/image_proxy?url={{ f.url|urlencode }}" alt="Figure"
+                        onerror="handleImgError(this, '{{ paper.id }}')">
+                </div>
                 {% else %}
-                <div style="padding:2rem; background:#eee; text-align:center;">No Image URL</div>
+                <div style="padding:2rem; background:#f1f5f9; text-align:center; color:#64748b; border-radius:0.5rem;">
+                    <i class="fa-regular fa-image" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                    No Image URL Available
+                </div>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
+
+    <script>
+        function handleImgError(img, paperId) {
+            const container = img.parentElement;
+            container.innerHTML = `
+                <div style="padding:1.5rem; background:#fff1f2; text-align:center; border:1px dashed #e11d48; border-radius:0.5rem;">
+                    <i class="fa-solid fa-ban" style="font-size:1.5rem; color:#e11d48; margin-bottom:0.5rem; display:block;"></i>
+                    <p style="margin:0; font-size:0.9rem; color:#be123c;">Image blocked by ArXiv</p>
+                    <a href="https://arxiv.org/html/${paperId}" target="_blank" style="display:inline-block; margin-top:0.5rem; color:#e11d48; font-weight:600; text-decoration:underline;">
+                        Open Paper to View Figure <i class="fa-solid fa-external-link-alt"></i>
+                    </a>
+                </div>
+            `;
+        }
+    </script>
 </body>
 
 </html>
