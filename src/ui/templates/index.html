@@ -386,6 +386,19 @@
         </div>
 
         <div class="nav-group">
+            <div class="nav-label">Source</div>
+            <div class="nav-item active" onclick="setSource('all', this)">
+                <i class="fa-solid fa-globe"></i> All Sources
+            </div>
+            <div class="nav-item" onclick="setSource('arxiv', this)">
+                <i class="fa-solid fa-graduation-cap"></i> ArXiv
+            </div>
+            <div class="nav-item" onclick="setSource('pubmed', this)">
+                <i class="fa-solid fa-book-medical"></i> PubMed
+            </div>
+        </div>
+
+        <div class="nav-group">
             <div class="nav-label">Search Target</div>
             <div class="nav-item active" onclick="setIndex('articles', this)">
                 <i class="fa-regular fa-file-lines"></i> Papers
@@ -447,33 +460,27 @@
 
         function setIndex(index, el) {
             currentIndex = index;
-            // Update UI
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            // Update UI for Target Group (second group)
+            const targetItems = document.querySelectorAll('.nav-group')[1].querySelectorAll('.nav-item');
+            targetItems.forEach(i => i.classList.remove('active'));
             el.classList.add('active');
             // Re-search if query exists
             if (document.getElementById('searchQuery').value) performSearch();
         }
 
+        function setSource(source, el) {
+            currentSource = source;
+            // Update UI
+            // Find the Source group (first group)
+            const sourceItems = document.querySelectorAll('.nav-group')[0].querySelectorAll('.nav-item');
+            sourceItems.forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+
+            if (document.getElementById('searchQuery').value) performSearch();
+        }
+
         function updateSearch() {
-            // Get values from radio buttons
-            const indexRadios = document.getElementsByName('index_type');
-            for (let rad of indexRadios) {
-                if (rad.checked) currentIndex = rad.value;
-            }
-
-            const sourceRadios = document.getElementsByName('source_type');
-            for (let rad of sourceRadios) {
-                if (rad.checked) currentSource = rad.value;
-            }
-
-            // Sync Sidebar
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            // Simple mapping since sidebar doesn't have source logic yet, just index
-            // But we keep sidebar for quick switching of index type
-            if (currentIndex === 'articles') document.querySelectorAll('.nav-item')[0].classList.add('active');
-            if (currentIndex === 'tables') document.querySelectorAll('.nav-item')[1].classList.add('active');
-            if (currentIndex === 'figures') document.querySelectorAll('.nav-item')[2].classList.add('active');
-
+            // Retired function, kept for safety but currently unused with new Sidebar logic
             if (document.getElementById('searchQuery').value) performSearch();
         }
 
@@ -506,49 +513,7 @@
                 return;
             }
 
-            // Add the filters-row here, before the results grid
-            const filtersRowHtml = `
-                <div class="filters-row" style="margin-top: 1rem; display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                    <div class="radio-group">
-                        <label style="margin-right: 10px; font-weight: 600; color: var(--text-secondary);">Collection:</label>
-                        <label class="radio-label">
-                            <input type="radio" name="index_type" value="articles" onchange="updateSearch()"> 
-                            <span>Articles</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="index_type" value="tables" onchange="updateSearch()"> 
-                            <span>Tables</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="index_type" value="figures" onchange="updateSearch()"> 
-                            <span>Figures</span>
-                        </label>
-                    </div>
-
-                    <div class="vertical-divider" style="width: 1px; height: 24px; background: #e5e7eb;"></div>
-
-                    <div class="radio-group">
-                        <label style="margin-right: 10px; font-weight: 600; color: var(--text-secondary);">Source:</label>
-                        <label class="radio-label">
-                            <input type="radio" name="source_type" value="all" onchange="updateSearch()"> 
-                            <span>All</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="source_type" value="arxiv" onchange="updateSearch()"> 
-                            <span>ArXiv</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="source_type" value="pubmed" onchange="updateSearch()"> 
-                            <span>PubMed</span>
-                        </label>
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML('afterbegin', filtersRowHtml);
-
-            // Ensure radio buttons reflect current state
-            document.querySelector(`input[name="index_type"][value="${currentIndex}"]`).checked = true;
-            document.querySelector(`input[name="source_type"][value="${currentSource}"]`).checked = true;
+            // Filters are now in the sidebar, so we don't inject them here anymore.
 
             const grid = document.createElement('div');
             grid.className = 'results-grid';

@@ -57,8 +57,7 @@ def main():
             # Check if already indexed
             if indexer.es.exists(index="articles", id=paper_id):
                  print(f"  -> Article {paper_id} already indexed. Skipping.")
-                 # continuel temporarily comment out continue to FORCE update for debugging
-                 # continue
+                 continue
             
             # --- 4. Extract Data ---
             try:
