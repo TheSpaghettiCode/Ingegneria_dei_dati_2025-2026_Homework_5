@@ -29,6 +29,8 @@ venv/
 # Data (Scraped files might be large)
 data/html_arxiv/*
 !data/html_arxiv/.gitkeep
+data/html_pubmed/*
+!data/html_pubmed/.gitkeep
 data/indices/
 
 # Elasticsearch/Docker

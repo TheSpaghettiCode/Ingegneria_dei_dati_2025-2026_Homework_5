@@ -6,3 +6,4 @@ flask
 lxml
 streamlit
 pandas
+biopython

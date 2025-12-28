@@ -47,6 +47,7 @@ def search():
     """
     query = request.args.get('query', '')
     index_type = request.args.get('index_type', 'articles')
+    source_type = request.args.get('source_type', 'all')
     
     if not query:
         return jsonify([])
@@ -54,7 +55,7 @@ def search():
     # Map friendly name to index name if needed, but we use strict names in UI
     target_index = index_type.lower()
     
-    results = engine.search(index=target_index, query=query)
+    results = engine.search(index=target_index, query=query, filters={"source": source_type} if source_type != "all" else None)
     
     # Post-process for Image URLs
     if target_index == 'figures':
@@ -64,8 +65,16 @@ def search():
             paper_id = src.get('paper_id')
             # If relative URL (doesn't start with http), prepend arxiv base
             if raw_url and not raw_url.startswith('http') and paper_id:
-                # ArXiv HTML convention
-                src['url'] = f"https://arxiv.org/html/{paper_id}/{raw_url}"
+                # ArXiv or PubMed handling for images?
+                # PubMed Images usually are full URLs or specific relative paths handled by proxy.
+                # ArXiv ones needed the prefix.
+                if paper_id.startswith("PMC"):
+                     # PMC often has full URLs or we need complex logic. 
+                     # For now, let's assume if it is not http, we might need a base, but PMC HTML usually has full CDN links.
+                     pass
+                else:
+                    # ArXiv HTML convention
+                    src['url'] = f"https://arxiv.org/html/{paper_id}/{raw_url}"
                 
     return jsonify(results)
 

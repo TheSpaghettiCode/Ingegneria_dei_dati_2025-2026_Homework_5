@@ -6,40 +6,42 @@ Questo progetto implementa un motore di ricerca avanzato per articoli scientific
 Il sistema è stato progettato per il corso di Ingegneria dei Dati 2025-2026 (Homework 5).
 
 ## Funzionalità Principali
-1.  **Corpus Creation**: Script automatico per scaricare articoli in formato HTML da arXiv basati su query specifiche (es. "speech to text").
-2.  **Estrazione Dati**: Parsing avanzato dell'HTML per estrarre:
+1.  **Corpus Creation (Multi-Source)**:
+    *   **ArXiv**: Script per scaricare articoli HTML/XML (query: "speech to text").
+    *   **PubMed Central (PMC)**: Script per scaricare articoli Open Access (XML) (query: "cancer risk AND coffee consumption").
+2.  **Estrazione Dati**: Parsing avanzato di HTML e XML per estrarre:
     *   **Articoli**: Metadati (titolo, autori, data, abstract) e testo completo.
-    *   **Tabelle**: Didascalia, contenuto (body), ID, paragrafi che citano la tabella, e paragrafi di contesto (keyword matching).
+    *   **Tabelle**: Didascalia, contenuto (body), ID, paragrafi che citano la tabella, e paragrafi di contesto.
     *   **Figure**: Didascalia, URL immagine, ID, menzioni e contesto.
-3.  **Indicizzazione**: Utilizzo di **Elasticsearch** per indicizzare tre tipologie di documenti distinti (`articles`, `tables`, `figures`).
+3.  **Indicizzazione**: Utilizzo di **Elasticsearch** per indicizzare tre tipologie di documenti (`articles`, `tables`, `figures`) con campo `source` (arxiv o pubmed).
 4.  **Interfaccia di Ricerca**:
-    *   **CLI (Command Line Interface)**: Per ricerche rapide da terminale.
-    *   **Web UI**: Interfaccia web user-friendly basata su Flask per esplorare i risultati.
+    *   **Web UI**: Dashboard avanzata con filtri per collezione (Paper, Table, Figure) e **Sorgente** (All, ArXiv, PubMed).
 
 ## Struttura del Progetto
 
 ```text
 Ingegneria_dei_dati_2025-2026_Homework_5/
 ├── data/                       # Dati scaricati e processati
-│   └── html_arxiv/             # File HTML grezzi e metadati JSON
+│   ├── html_arxiv/             # Corpus ArXiv
+│   └── html_pubmed/            # Corpus PubMed (XML)
 ├── src/                        # Codice sorgente
 │   ├── scrapers/
-│   │   └── arxiv_scraper.py    # Script per il download da arXiv
+│   │   ├── arxiv_scraper.py    # Scraper ArXiv
+│   │   └── pubmed_scraper.py   # Scraper PubMed (BioPython)
 │   ├── extraction/
-│   │   └── extractor.py        # Logica di estrazione (BeautifulSoup)
+│   │   └── extractor.py        # Logica di estrazione (HTML + XML)
 │   ├── indexing/
-│   │   ├── index_manager.py    # Gestione schemi Elasticsearch
+│   │   ├── index_manager.py    # Mappings Elasticsearch
 │   │   └── indexer.py          # Script di indicizzazione massiva
 │   ├── search/
-│   │   ├── search_engine.py    # Wrapper per query Elasticsearch
-│   │   ├── cli.py              # Interfaccia a riga di comando
+│   │   ├── search_engine.py    # Wrapper Elasticsearch
 │   │   └── app.py              # Backend applicazione Web (Flask)
 │   └── ui/
-│       ├── templates/          # Template HTML per la Web UI
-│       └── static/             # File statici (CSS, JS)
-├── docker-compose.yml          # Configurazione per avviare Elasticsearch/Kibana
+│       ├── templates/          # Template HTML
+│       └── static/             # File statici
+├── docker-compose.yml          # Configurazione Elasticsearch
 ├── requirements.txt            # Dipendenze Python
-├── .gitignore                  # File ignorati da Git
+├── .gitignore                  # File ignorati
 └── README.md                   # Documentazione
 ```
 
@@ -47,99 +49,50 @@ Ingegneria_dei_dati_2025-2026_Homework_5/
 
 ### Prerequisiti
 *   Python 3.8 o superiore
-*   Docker (opzionale, raccomandato per Elasticsearch) o un'istanza Elasticsearch locale.
+*   Docker (opzionale) o Elasticsearch locale.
 
 ### Setup
-1.  **Clona il repository** (o scarica i file):
-    ```bash
-    git clone <repository-url>
-    cd Ingegneria_dei_dati_2025-2026_Homework_5
-    ```
-
-2.  **Crea un Virtual Environment (opzionale ma consigliato)**:
-    ```bash
-    python -m venv venv
-    # Windows
-    .\venv\Scripts\activate
-    # Mac/Linux
-    source venv/bin/activate
-    ```
-
-3.  **Installa le dipendenze**:
+1.  **Installazione Dipendenze**:
     ```bash
     pip install -r requirements.txt
     ```
+    *Include `biopython`, `arxiv`, `elasticsearch`, `flask`, `beautifulsoup4`, ecc.*
 
-4.  **Avvia Elasticsearch**:
-    
-    ### Opzione A: Con Docker (Consigliato)
-    Se hai Docker installato, usa il file `docker-compose.yml` incluso:
+2.  **Avvia Elasticsearch**:
     ```bash
     docker-compose up -d
     ```
-
-    ### Opzione B: Installazione Locale (No Docker)
-    Se non puoi usare Docker:
-    1.  Scarica Elasticsearch (ZIP per Windows) dal sito ufficiale: [Download Elasticsearch](https://www.elastic.co/downloads/elasticsearch)
-    2.  Estrai lo ZIP in una cartella (es. `C:\elasticsearch`).
-    3.  Apri il terminale, vai nella cartella estratta ed esegui:
-        ```cmd
-        bin\elasticsearch.bat
-        ```
-    4.  **Nota Importante**: Dalla versione 8.0, la sicurezza è abilitata per default. Per questo progetto (sviluppo locale), potresti voler disabilitare la sicurezza per semplicità (o configurare `verify_certs=False` nel codice Python).
-        *   Per disabilitare la sicurezza (SOLO LOCALE/DEV): Apri `config/elasticsearch.yml` e imposta `xpack.security.enabled: false`.
-
-    Attendi che Elasticsearch sia attivo su `http://localhost:9200`.
+    *Oppure avvia l'istanza locale su `localhost:9200`.*
 
 ## Come Eseguire il Sistema
 
-### 1. Creazione del Corpus (Download)
-Scarica gli articoli da arXiv. Di default cerca "speech to text".
+### 1. Creazione del Corpus
+**ArXiv**:
 ```bash
 python src/scrapers/arxiv_scraper.py
 ```
-*I file verranno salvati in `data/html_arxiv`.*
+**PubMed**:
+```bash
+python src/scrapers/pubmed_scraper.py --max 500
+```
+*I file verranno salvati rispettivamente in `data/html_arxiv` e `data/html_pubmed`.*
 
 ### 2. Indicizzazione
-Processa i file HTML scaricati ed inviali a Elasticsearch.
+Processa entrambi i corpus ed inviali a Elasticsearch.
 ```bash
 python src/indexing/indexer.py
 ```
-*Questo script creerà gli indici `articles`, `tables` e `figures` se non esistono.*
 
-### 3. Ricerca
-Puoi cercare utilizzando due modalità:
-
-**A. Riga di Comando (CLI)**
-```bash
-# Cerca negli articoli
-python src/search/cli.py "deep learning" --index articles
-
-# Cerca nelle tabelle (es. didascalie o contenuto)
-python src/search/cli.py "accuracy result" --index tables
-
-# Cerca figure
-python src/search/cli.py "architecture" --index figures
-```
-
-**B. Interfaccia Web (Dashboard Avanzata)**
-Avvia la nuova dashboard (Custom Flask):
+### 3. Ricerca (Web UI)
+Avvia la dashboard Flask:
 ```bash
 python src/search/app.py
 ```
 Apri il browser all'indirizzo: **http://127.0.0.1:5000**
 
+*   Potrai filtrare i risultati per **Source** (ArXiv/PubMed) e tipo di oggetto (Paper, Table, Figure).
 
-## Dettagli Implementativi
-
-### Estrazione (`extractor.py`)
-Utilizza `BeautifulSoup` per analizzare il DOM HTML generato da ArXiv (spesso convertito via LaTeXML).
-*   **Contesto**: Per associare il contesto a tabelle e figure, lo script cerca nei paragrafi del testo:
-    1.  Link espliciti all'ID dell'oggetto (es. `<a href="#tab1">`).
-    2.  Intersezione di keyword (escludendo stop words) tra la didascalia e il paragrafo.
-
-### Schema Elasticsearch (`index_manager.py`)
-*   **Articles**: `title`, `authors`, `date`, `abstract`, `full_text`.
-*   **Tables**: `paper_id`, `table_id`, `caption`, `body` (contenuto celle), `mentions` (paragrafi citanti), `context_paragraphs`.
-*   **Figures**: `paper_id`, `figure_id`, `url`, `caption`, `mentions`, `context_paragraphs`.
+### Dettagli Implementativi
+*   **PubMed Integration**: Utilizza `Bio.Entrez` per scaricare XML full-text. L'`extractor.py` seleziona automaticamente il parser (`xml` vs `html.parser`) in base all'estensione del file.
+*   **Context Extraction**: Algoritmo ibrido basato su link espliciti (`<a href...`) e keyword matching nei paragrafi adiacenti.
 

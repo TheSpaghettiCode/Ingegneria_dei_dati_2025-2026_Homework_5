@@ -14,7 +14,7 @@ class SearchEngine:
         """
         self.es = Elasticsearch(es_host)
         
-    def search(self, index, query, fields=None):
+    def search(self, index, query, fields=None, filters=None):
         """
         Perform a search on the specified index using a boolean query string.
         
@@ -22,24 +22,38 @@ class SearchEngine:
            index (str): The name of the index to search (e.g., 'articles', 'tables', 'figures').
            query (str): The search query string (supports Lucene syntax like 'speech AND text').
            fields (list): Optional list of fields to restrict the search to.
+           filters (dict): Optional dictionary of exact match filters (e.g., {"source": "pubmed"}).
            
         Returns:
             list: A list of search hits (dictionaries) from Elasticsearch.
         """
         
-        # We use 'query_string' which allows for complex boolean operations (AND, OR, NOT)
-        # This satisfies the requirement for "Boolean Combinations" (e.g., "speech AND text")
-        body = {
-            "query": {
+        # Base Query
+        must_clauses = [
+            {
                 "query_string": {
                     "query": query,
-                    "fields": fields if fields else ["*"], # Search all fields by default
-                    "default_operator": "AND" # Make terms mandatory by default (closer to Google behavior)
+                    "fields": fields if fields else ["*"],
+                    "default_operator": "AND"
+                }
+            }
+        ]
+        
+        # Apply Filters
+        if filters:
+            for field, value in filters.items():
+                if value:
+                     must_clauses.append({"term": {field: value}})
+        
+        body = {
+            "query": {
+                "bool": {
+                    "must": must_clauses
                 }
             },
             "highlight": {
                 "fields": {
-                    "*": {} # Highlight matches in all fields
+                    "*": {} 
                 }
             }
         }

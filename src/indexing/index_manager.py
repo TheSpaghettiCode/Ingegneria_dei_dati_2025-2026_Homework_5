@@ -22,7 +22,9 @@ class IndexManager:
                         "authors": {"type": "keyword"},
                         "date": {"type": "date"},
                         "abstract": {"type": "text"},
-                        "full_text": {"type": "text"}
+                        "abstract": {"type": "text"},
+                        "full_text": {"type": "text"},
+                        "source": {"type": "keyword"} # 'arxiv' or 'pubmed'
                     }
                 }
             },
@@ -34,7 +36,8 @@ class IndexManager:
                         "caption": {"type": "text"},
                         "body": {"type": "text"},
                         "mentions": {"type": "text"},
-                        "context_paragraphs": {"type": "text"}
+                        "context_paragraphs": {"type": "text"},
+                         "source": {"type": "keyword"}
                     }
                 }
             },
@@ -46,8 +49,8 @@ class IndexManager:
                         "url": {"type": "keyword"},
                         "caption": {"type": "text"},
                         "mentions": {"type": "text"},
-                        # context_paragraphs included to provide semantic context during search
-                        "context_paragraphs": {"type": "text"} 
+                        "context_paragraphs": {"type": "text"},
+                        "source": {"type": "keyword"} 
                     }
                 }
             }
@@ -64,56 +67,58 @@ class IndexManager:
             else:
                 print(f"Index {index_name} already exists.")
 
-    def index_data(self, paper_data, metadata):
+    def index_data(self, data):
         """
         Prepare and bulk index data for a single paper (Article + Tables + Figures).
         
         Args:
-            paper_data (dict): Result from Extractor.process_file().
-            metadata (dict): Metadata loaded from JSON sidecar.
+            data (dict): Unified dictionary containing paper content and metadata.
         """
         actions = []
         
         # 1. Prepare Article Document
         article_doc = {
             "_index": "articles",
-            "_id": paper_data["paper_id"],
+            "_id": data["paper_id"],
             "_source": {
-                "title": metadata.get("title", ""),
-                "authors": metadata.get("authors", []),
-                "date": metadata.get("published", ""),
-                "abstract": metadata.get("abstract", ""),
-                "full_text": paper_data.get("full_text", "")
+                "title": data.get("title", ""),
+                "authors": data.get("authors", []),
+                "date": data.get("date", ""),
+                "abstract": data.get("abstract", ""),
+                "full_text": data.get("full_text", ""),
+                "source": data.get("source", "arxiv")
             }
         }
         actions.append(article_doc)
         
         # 2. Prepare Table Documents
-        for tbl in paper_data["tables"]:
+        for tbl in data.get("tables", []):
             table_doc = {
                 "_index": "tables",
                 "_source": {
-                    "paper_id": paper_data["paper_id"],
+                    "paper_id": data["paper_id"],
                     "table_id": tbl["table_id"],
                     "caption": tbl["caption"],
                     "body": tbl["body"],
                     "mentions": tbl["mentions"],
-                    "context_paragraphs": tbl["context_paragraphs"]
+                    "context_paragraphs": tbl["context_paragraphs"],
+                    "source": data.get("source", "arxiv")
                 }
             }
             actions.append(table_doc)
             
         # 3. Prepare Figure Documents
-        for fig in paper_data["figures"]:
+        for fig in data.get("figures", []):
             fig_doc = {
                 "_index": "figures",
                 "_source": {
-                    "paper_id": paper_data["paper_id"],
+                    "paper_id": data["paper_id"],
                     "figure_id": fig["figure_id"],
                     "url": fig["url"],
                     "caption": fig["caption"],
                     "mentions": fig["mentions"],
-                    "context_paragraphs": fig["context_paragraphs"]
+                    "context_paragraphs": fig["context_paragraphs"],
+                    "source": data.get("source", "arxiv")
                 }
             }
             actions.append(fig_doc)
@@ -121,4 +126,4 @@ class IndexManager:
         # Execute Bulk Indexing
         if actions:
             helpers.bulk(self.es, actions)
-            print(f"Indexed {len(actions)} documents for paper {paper_data['paper_id']}")
+            # print(f"Indexed {len(actions)} documents for paper {data['paper_id']}")
