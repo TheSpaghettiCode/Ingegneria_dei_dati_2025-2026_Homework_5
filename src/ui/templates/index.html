@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SciSearch Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --bg-body: #f1f5f9;
+            --bg-sidebar: #0f172a;
+            --bg-card: #ffffff;
+            --text-main: #334155;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+        }
+
+        .brand span {
+            color: white;
+        }
+
+        .metric-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* MAIN AREA */
+        .main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--bg-card);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-area {
+            flex-grow: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* RESULTS */
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Types */
+        .type-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .type-badge.articles {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .type-badge.tables {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .type-badge.figures {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .card-meta {
+            color: var(--secondary);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Specific Layouts */
+        .caption-box {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+            color: #78350f;
+        }
+
+        .figure-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+
+        .figure-img-container {
+            background: #000;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .figure-img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .expander {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .expander-header {
+            background: var(--bg-body);
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .expander-content {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            display: none;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: white;
+        }
+
+        .expander.open .expander-content {
+            display: block;
+        }
+
+        .columns-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        pre {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0;
+            font-size: 0.85rem;
+        }
+
+        /* Highlight classes */
+        .field-label {
+            font-weight: 600;
+            color: var(--text-light);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-id {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .text-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-microscope"></i>
+            <span>SciSearch</span>
+        </div>
+
+        <div class="metric-cards">
+            <div class="metric-card">
+                <div class="metric-label">Total Papers</div>
+                <div class="metric-value" id="count-papers">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Tables</div>
+                <div class="metric-value" id="count-tables">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Figures</div>
+                <div class="metric-value" id="count-figures">-</div>
+            </div>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Search Target</div>
+            <div class="nav-item active" onclick="setIndex('articles', this)">
+                <i class="fa-regular fa-file-lines"></i> Papers
+            </div>
+            <div class="nav-item" onclick="setIndex('tables', this)">
+                <i class="fa-solid fa-table"></i> Tables
+            </div>
+            <div class="nav-item" onclick="setIndex('figures', this)">
+                <i class="fa-regular fa-image"></i> Figures
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="header">
+            <h2 style="margin:0; font-size:1.25rem;">Scientific Knowledge Graph Search</h2>
+            <div class="search-area">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" class="search-input" id="searchQuery"
+                    placeholder="Search for keywords, authors, or concepts..." onkeypress="handleEnter(event)">
+            </div>
+            <button onclick="performSearch()"
+                style="background:var(--primary); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.5rem; cursor:pointer; font-weight:600;">Search</button>
+        </div>
+
+        <div class="content" id="resultsArea">
+            <div style="text-align:center; color:var(--text-light); margin-top:4rem;">
+                <i class="fa-solid fa-magnifying-glass" style="font-size:3rem; margin-bottom:1rem; opacity:0.3;"></i>
+                <p>Select a target from the sidebar and start searching.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Engineered for <strong>Data Engineering HW5</strong>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 'articles';
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchStats();
+        });
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('count-papers').innerText = data.papers;
+                document.getElementById('count-tables').innerText = data.tables;
+                document.getElementById('count-figures').innerText = data.figures;
+            } catch (e) {
+                console.error("Stats error", e);
+            }
+        }
+
+        function setIndex(index, el) {
+            currentIndex = index;
+            // Update UI
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            // Re-search if query exists
+            if (document.getElementById('searchQuery').value) performSearch();
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') performSearch();
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) return;
+
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = '<div style="text-align:center; margin-top:2rem;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i></div>';
+
+            try {
+                const res = await fetch(`/api/search?index_type=${currentIndex}&query=${encodeURIComponent(query)}`);
+                const results = await res.json();
+                renderResults(results);
+            } catch (e) {
+                resultsArea.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+            }
+        }
+
+        function renderResults(results) {
+            const container = document.getElementById('resultsArea');
+            container.innerHTML = '';
+
+            if (results.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-light);">No results found.</p>';
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'results-grid';
+
+            results.forEach(hit => {
+                const src = hit._source;
+                const paperId = hit._id; // Use the ES document ID reliably
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                if (currentIndex === 'articles') {
+                    card.innerHTML = `
+                        <div class="card-header-flex">
+                            <span class="type-badge articles">Paper</span>
+                            <span class="card-id">ID: ${paperId}</span>
+                        </div>
+                        <a href="/paper/${paperId}" class="card-title">${src.title}</a>
+                        <div class="card-meta">
+                            <span><i class="fa-regular fa-user"></i> ${src.authors ? src.authors.slice(0, 3).join(', ') + (src.authors.length > 3 ? ' et al.' : '') : 'Unknown'}</span>
+                            <span><i class="fa-regular fa-calendar"></i> ${src.date ? src.date.slice(0, 10) : ''}</span>
+                        </div>
+                        <div class="field-label">Abstract</div>
+                        <div class="text-content">${src.abstract ? src.abstract.slice(0, 300) + '...' : ''}</div>
+                        ${createExpander('Read Full Abstract', src.abstract)}
+                    `;
+                } else if (currentIndex === 'tables') {
+                    card.innerHTML = `
+                        <div class="card-header-flex">
+                            <span class="type-badge tables">Table</span>
+                            <span class="card-id">ID: ${src.table_id}</span>
+                        </div>
+                        <div style="font-size:0.9rem; color:var(--secondary); margin-bottom:0.8rem;">
+                            Found in Paper: <a href="/paper/${src.paper_id}" style="color:var(--primary); text-decoration:none; font-weight:600;">${src.paper_id}</a>
+                        </div>
+                        
+                        <div class="caption-box">
+                            <span class="field-label" style="color:#b45309;">Table Caption</span>
+                            ${src.caption}
+                        </div>
+                        
+                        <div class="field-label">Full Body Content:</div>
+                        ${createExpander('View Body Content', `<pre>${src.body}</pre>`, true)}
+                        
+                        <div class="columns-2">
+                             <div>
+                                <span class="field-label" style="color:#1d4ed8;">Mentions (Paragraphs citing this table):</span>
+                                ${createExpander(src.mentions?.length + ' Mentions', createList(src.mentions), false, 'border-left: 3px solid #3b82f6; background:#eff6ff;')}
+                             </div>
+                             <div>
+                                <span class="field-label" style="color:#047857;">Context (Paragraphs matching keywords):</span>
+                                ${createExpander(src.context_paragraphs?.length + ' Context Paragraphs', createList(src.context_paragraphs, true), false, 'border-left: 3px solid #10b981; background:#ecfdf5;')}
+                             </div>
+                        </div>
+                    `;
+                } else if (currentIndex === 'figures') {
+                    const encodedUrl = src.url ? encodeURIComponent(src.url) : '';
+                    const proxyUrl = src.url ? `/api/image_proxy?url=${encodedUrl}` : '';
+
+                    card.innerHTML = `
+                        <div class="card-header-flex">
+                            <span class="type-badge figures">Figure</span>
+                            <span class="card-id">ID: ${src.figure_id}</span>
+                        </div>
+                        <div class="figure-layout">
+                            <div class="figure-img-container">
+                                ${src.url ? `<img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=Image+Load+Error';">` : '<div style="color:white">No Image URL</div>'}
+                            </div>
+                            <div>
+                                <div style="font-size:0.9rem; color:var(--secondary); margin-bottom:0.5rem;">
+                                    Paper: <a href="/paper/${src.paper_id}" style="color:var(--primary); font-weight:600;">${src.paper_id}</a>
+                                </div>
+                                <div class="caption-box" style="background:#fff1f2; border-color:#e11d48; color:#9f1239;">
+                                    <span class="field-label" style="color:#be123c;">Figure Caption</span>
+                                    ${src.caption}
+                                </div>
+                                <span class="field-label">Mentions:</span>
+                                ${createExpander('Citations (' + (src.mentions?.length || 0) + ')', createList(src.mentions))}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                grid.appendChild(card);
+            });
+
+            container.appendChild(grid);
+        }
+
+        function createExpander(title, content, open = false, customStyle = '') {
+            if (!content || content === 'None') return '';
+            return `
+                <div class="expander ${open ? 'open' : ''}" style="${customStyle}">
+                    <div class="expander-header" onclick="this.parentElement.classList.toggle('open')">
+                        ${title} <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="expander-content">${content}</div>
+                </div>
+            `;
+        }
+
+        function createList(items, quote = false) {
+            if (!items || items.length === 0) return 'None';
+            return items.map(i => `<div style="margin-bottom:0.5rem; ${quote ? 'padding-left:0.5rem; border-left:2px solid var(--border);' : ''}">${i}</div>`).join('');
+        }
+    </script>
+</body>
+
+</html>

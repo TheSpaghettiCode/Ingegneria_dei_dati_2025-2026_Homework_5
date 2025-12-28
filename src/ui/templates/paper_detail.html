@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ paper.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .paper-header {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            margin: 0 0 1rem 0;
+            font-size: 2rem;
+            color: #0f172a;
+        }
+
+        .meta {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .abstract-box {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 3rem 0 1rem 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .caption {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #334155;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.85rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Search</a>
+
+        <div class="paper-header">
+            <span
+                style="background:#dbeafe; color:#1e40af; padding:0.25rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:700;">PAPER</span>
+            <h1>{{ paper.title }}</h1>
+            <div class="meta">
+                <i class="fa-regular fa-user"></i> {{ paper.authors|join(', ') }} &nbsp;•&nbsp;
+                <i class="fa-regular fa-calendar"></i> {{ paper.date[:10] }} &nbsp;•&nbsp;
+                <a href="{{ paper.html_url }}" target="_blank" style="color:var(--primary);">View on ArXiv <i
+                        class="fa-solid fa-external-link-alt"></i></a>
+            </div>
+
+            <h3>Abstract</h3>
+            <div class="abstract-box">{{ paper.abstract }}</div>
+        </div>
+
+        <div class="section-title">Tables ({{ tables|length }})</div>
+        <div class="grid">
+            {% for t in tables %}
+            <div class="card">
+                <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">ID: {{ t.table_id }}</div>
+                <div class="caption">{{ t.caption }}</div>
+                <pre>{{ t.body[:500] }}...</pre>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="section-title">Figures ({{ figures|length }})</div>
+        <div class="grid">
+            {% for f in figures %}
+            <div class="card">
+                <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">ID: {{ f.figure_id }}</div>
+                <div class="caption">{{ f.caption }}</div>
+                {% if f.url %}
+                <img src="/api/image_proxy?url={{ f.url|urlencode }}" alt="Figure">
+                {% else %}
+                <div style="padding:2rem; background:#eee; text-align:center;">No Image URL</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+
+</html>

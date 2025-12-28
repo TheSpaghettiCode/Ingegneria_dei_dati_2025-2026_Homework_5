@@ -1,12 +1,44 @@
-# Dati scaricati
-data/
-data/html_arxiv/
-data/html_pubmed/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Ambienti virtuali
+# Virtual Environment
 venv/
 .env
+.venv
 
-# Cache Python
-__pycache__/
-*.pyc
+# Data (Scraped files might be large)
+data/html_arxiv/*
+!data/html_arxiv/.gitkeep
+data/indices/
+
+# Elasticsearch/Docker
+docker-data/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+*.log

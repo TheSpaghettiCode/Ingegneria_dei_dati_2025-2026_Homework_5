@@ -1,2 +1,8 @@
 requests
 beautifulsoup4
+arxiv
+elasticsearch
+flask
+lxml
+streamlit
+pandas
