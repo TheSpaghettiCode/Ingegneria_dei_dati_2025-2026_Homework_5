@@ -8,14 +8,14 @@ Il sistema è progettato come una pipeline ETL (Extract, Transform, Load) che al
 
 ```mermaid
 graph TD
-    User[Utente] -->|Ricerca & Filtri| UI[Web UI (Streamlit/Flask)]
-    UI -->|API Call| Backend[Flask Server (app.py)]
+    User[Utente] -->|Ricerca & Filtri| UI["Web UI (Streamlit/Flask)"]
+    UI -->|API Call| Backend["Flask Server (app.py)"]
     Backend -->|Query DSL| ES[(Elasticsearch)]
     
     subgraph Data Pipeline
-        S_Arxiv[Scraper ArXiv] -->|HTML| RawData[Data Storage (Local)]
+        S_Arxiv[Scraper ArXiv] -->|HTML| RawData["Data Storage (Local)"]
         S_PubMed[Scraper PubMed] -->|XML| RawData
-        RawData -->|Parse| Extractor[Extractor (BeautifulSoup)]
+        RawData -->|Parse| Extractor["Extractor (BeautifulSoup)"]
         Extractor -->|Structured Dict| Indexer[Indexer.py]
         Indexer -->|Bulk Index| ES
     end
