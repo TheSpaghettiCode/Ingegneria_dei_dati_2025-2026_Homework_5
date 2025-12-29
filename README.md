@@ -7,92 +7,55 @@ Il sistema è stato progettato per il corso di Ingegneria dei Dati 2025-2026 (Ho
 
 ## Funzionalità Principali
 1.  **Corpus Creation (Multi-Source)**:
-    *   **ArXiv**: Script per scaricare articoli HTML/XML (query: "speech to text").
-    *   **PubMed Central (PMC)**: Script per scaricare articoli Open Access (XML) (query: "cancer risk AND coffee consumption").
-2.  **Estrazione Dati**: Parsing avanzato di HTML e XML per estrarre:
-    *   **Articoli**: Metadati (titolo, autori, data, abstract) e testo completo.
-    *   **Tabelle**: Didascalia, contenuto (body), ID, paragrafi che citano la tabella, e paragrafi di contesto.
-    *   **Figure**: Didascalia, URL immagine, ID, menzioni e contesto.
-3.  **Indicizzazione**: Utilizzo di **Elasticsearch** per indicizzare tre tipologie di documenti (`articles`, `tables`, `figures`) con campo `source` (arxiv o pubmed).
-4.  **Interfaccia di Ricerca**:
-    *   **Web UI**: Dashboard avanzata con filtri per collezione (Paper, Table, Figure) e **Sorgente** (All, ArXiv, PubMed).
+# SciSearch: Ricerca Semantica per Articoli Scientifici
 
-## Struttura del Progetto
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.x-yellow)
+![Flask](https://img.shields.io/badge/Backend-Flask-green)
+![Status](https://img.shields.io/badge/Status-Complete-success)
 
-```text
-Ingegneria_dei_dati_2025-2026_Homework_5/
-├── data/                       # Dati scaricati e processati
-│   ├── html_arxiv/             # Corpus ArXiv
-│   └── html_pubmed/            # Corpus PubMed (XML)
-├── src/                        # Codice sorgente
-│   ├── scrapers/
-│   │   ├── arxiv_scraper.py    # Scraper ArXiv
-│   │   └── pubmed_scraper.py   # Scraper PubMed (BioPython)
-│   ├── extraction/
-│   │   └── extractor.py        # Logica di estrazione (HTML + XML)
-│   ├── indexing/
-│   │   ├── index_manager.py    # Mappings Elasticsearch
-│   │   └── indexer.py          # Script di indicizzazione massiva
-│   ├── search/
-│   │   ├── search_engine.py    # Wrapper Elasticsearch
-│   │   └── app.py              # Backend applicazione Web (Flask)
-│   └── ui/
-│       ├── templates/          # Template HTML
-│       └── static/             # File statici
-├── docker-compose.yml          # Configurazione Elasticsearch
-├── requirements.txt            # Dipendenze Python
-├── .gitignore                  # File ignorati
-└── README.md                   # Documentazione
-```
+**SciSearch** è un motore di ricerca avanzato progettato per indicizzare e interrogare corpus scientifici eterogenei (ArXiv e PubMed). A differenza dei motori tradizionali, SciSearch tratta **Tabelle** e **Figure** come "cittadini di prima classe", permettendo agli utenti di cercare specificamente all'interno dei dati tabulari o delle didascalie grafiche, mantenendo il contesto semantico (ovvero, *dove* e *come* l'oggetto è citato nel testo).
 
-## Requisiti e Installazione
+---
 
-### Prerequisiti
-*   Python 3.8 o superiore
-*   Docker (opzionale) o Elasticsearch locale.
+## Documentazione
 
-### Setup
-1.  **Installazione Dipendenze**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *Include `biopython`, `arxiv`, `elasticsearch`, `flask`, `beautifulsoup4`, ecc.*
+La documentazione completa del progetto è disponibile nella cartella [`docs/`](./docs):
 
-2.  **Avvia Elasticsearch**:
-    ```bash
-    docker-compose up -d
-    ```
-    *Oppure avvia l'istanza locale su `localhost:9200`.*
+*   **[Architettura del Sistema](./docs/ARCHITECTURE.md)**: Diagrammi Mermaid e spiegazione dei flussi ETL e della logica di indicizzazione.
+*   **[Dettagli Implementativi](./docs/IMPLEMENTATION.md)**: Analisi approfondita del codice (Scrapers, Extractor, Indexer) e delle scelte algoritmiche.
+*   **[Guida all'Installazione](./docs/SETUP.md)**: Istruzioni passo-passo per setup, Docker, e avvio rapido.
 
-## Come Eseguire il Sistema
+## Funzionalità Chiave
 
-### 1. Creazione del Corpus
-**ArXiv**:
+1.  **Multi-Source Ingestion**:
+    *   **ArXiv**: Scraping di HTML (via LaTeXML/ar5iv).
+    *   **PubMed Central**: Ingestione di XML Open Access tramite API Entrez.
+2.  **Object-Level Indexing**:
+    *   Le tabelle non sono solo blocchi di testo: le celle, le didascalie e i paragrafi di citazione sono indicizzati strutturalmente.
+    *   Le figure sono ricercabili tramite didascalia e contesto.
+3.  **Context Awareness**:
+    *   Ogni risultato (Tabella/Figura) mostra i "Context Paragraphs": ovvero i brani esatti del paper che discutono quell'elemento.
+4.  **Interfaccia Avanzata**:
+    *   Filtri laterali persistenti (Source: ArXiv/PubMed).
+    *   Switch dinamico del target di ricerca (Paper, Table, Figure).
+    *   Proxy immagini integrato per visualizzare figure protette.
+
+## Quick Start
+
+Per i più impazienti, ecco come avviare tutto in pochi secondi (assumendo Elasticsearch attivo su localhost:9200):
+
 ```bash
-python src/scrapers/arxiv_scraper.py
-```
-**PubMed**:
-```bash
-python src/scrapers/pubmed_scraper.py --max 500
-```
-*I file verranno salvati rispettivamente in `data/html_arxiv` e `data/html_pubmed`.*
+# 1. Installa dipendenze
+pip install -r requirements.txt
 
-### 2. Indicizzazione
-Processa entrambi i corpus ed inviali a Elasticsearch.
-```bash
+# 2. Popola il DB (se vuoto)
 python src/indexing/indexer.py
-```
 
-### 3. Ricerca (Web UI)
-Avvia la dashboard Flask:
-```bash
+# 3. Avvia la Web App
 python src/search/app.py
 ```
-Apri il browser all'indirizzo: **http://127.0.0.1:5000**
+Visita **http://127.0.0.1:5000** per iniziare a cercare.
 
-*   Potrai filtrare i risultati per **Source** (ArXiv/PubMed) e tipo di oggetto (Paper, Table, Figure).
-
-### Dettagli Implementativi
-*   **PubMed Integration**: Utilizza `Bio.Entrez` per scaricare XML full-text. L'`extractor.py` seleziona automaticamente il parser (`xml` vs `html.parser`) in base all'estensione del file.
-*   **Context Extraction**: Algoritmo ibrido basato su link espliciti (`<a href...`) e keyword matching nei paragrafi adiacenti.
-
+---
+*Progetto sviluppato per il corso di Ingegneria dei Dati, A.A. 2025-2026. Autore: Andrea.*
