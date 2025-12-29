@@ -63,18 +63,16 @@ def search():
             src = hit['_source']
             raw_url = src.get('url', '')
             paper_id = src.get('paper_id')
-            # If relative URL (doesn't start with http), prepend arxiv base
-            if raw_url and not raw_url.startswith('http') and paper_id:
-                # ArXiv or PubMed handling for images?
-                # PubMed Images usually are full URLs or specific relative paths handled by proxy.
-                # ArXiv ones needed the prefix.
-                if paper_id.startswith("PMC"):
-                     # PMC often has full URLs or we need complex logic. 
-                     # For now, let's assume if it is not http, we might need a base, but PMC HTML usually has full CDN links.
-                     pass
-                else:
-                    # ArXiv HTML convention
-                    src['url'] = f"https://arxiv.org/html/{paper_id}/{raw_url}"
+            
+            # FIX: Extractor blindly appended .jpg even if present, leading to .jpg.jpg
+            if raw_url.endswith('.jpg.jpg'):
+                src['url'] = raw_url[:-4]
+            elif raw_url.endswith('.png.jpg'): # Possible edge case
+                src['url'] = raw_url[:-4]
+                
+            # ArXiv Handling
+            if raw_url and not raw_url.startswith('http') and paper_id and not paper_id.startswith("PMC"):
+                 src['url'] = f"https://arxiv.org/html/{paper_id}/{raw_url}"
                 
     return jsonify(results)
 

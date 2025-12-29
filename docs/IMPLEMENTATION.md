@@ -1,10 +1,10 @@
-# 🛠️ Dettagli Implementativi & Code Analysis
+#  Dettagli Implementativi & Code Analysis
 
 Questo documento fornisce una spiegazione approfondita dei moduli principali del codice sorgente di **SciSearch**, un motore di ricerca semantico per articoli scientifici.
 
 ---
 
-## 1. Modulo Scraper 🕷️
+## 1. Modulo Scraper 
 
 Il sistema utilizza due scraper distinti per massimizzare la qualità dei dati scaricati.
 
@@ -38,7 +38,7 @@ Poiché ArXiv non fornisce HTML via API, questo scraper agisce come un client we
 
 ---
 
-## 2. Modulo Extraction (`src/extraction/extractor.py`) 🧠
+## 2. Modulo Extraction (`src/extraction/extractor.py`) 
 
 La classe `Extractor` è il cuore dell'elaborazione semantica. Utilizza un approccio ibrido per normalizzare dati eterogenei (HTML vs XML) in un formato unificato.
 
@@ -66,7 +66,7 @@ graph TD
     Context --> Output[Unified JSON]
 ```
 
-### Context Extraction Algorithm 🔍
+### Context Extraction Algorithm 
 Per ogni oggetto estratto (Tabella o Figura), il sistema deve identificare *dove* se ne parla nel testo. Questo permette all'utente di cercare "risultati accuracy" e trovare la Tabella 1 perché il paragrafo che la cita contiene quella parola.
 
 L'algoritmo (`_post_process_context`) opera in due fasi:
@@ -82,7 +82,7 @@ L'algoritmo (`_post_process_context`) opera in due fasi:
 
 ---
 
-## 3. Indicizzazione (`src/indexing/`) 🗄️
+## 3. Indicizzazione (`src/indexing/`) 
 
 Il sistema utilizza **Elasticsearch** con uno schema multi-indice per ottimizzare le performance di ricerca.
 
@@ -114,7 +114,7 @@ for paper in papers:
 
 ---
 
-## 4. Web Application (`src/ui/`) 💻
+## 4. Web Application (`src/ui/`) 
 
 L'interfaccia utente è costruita per la velocità e la chiarezza.
 
@@ -132,4 +132,3 @@ L'interfaccia utente è costruita per la velocità e la chiarezza.
     3.  Flask serve l'immagine al browser.
 
 ---
-*Documentazione generata automaticamente per il progetto SciSearch.*

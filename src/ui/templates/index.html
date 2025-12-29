@@ -579,7 +579,7 @@
                         </div>
                         <div class="figure-layout">
                             <div class="figure-img-container">
-                                ${src.url ? `<div class="img-container" data-url="${src.url}"><img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="handleImgError(this, '${src.url}')"></div>` : '<div style="color:white">No Image URL</div>'}
+                                ${src.url ? `<div class="img-container" data-url="${src.url}"><img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="handleImgError(this, '${src.paper_id}')"></div>` : '<div style="color:white">No Image URL</div>'}
                             </div>
                             <div>
                                 <div style="font-size:0.9rem; color:var(--secondary); margin-bottom:0.5rem;">
@@ -621,13 +621,23 @@
 
         function handleImgError(img, paperId) {
             const container = img.parentElement;
+            // Differentiate based on paper source if possible, but generic fallback is safe
+            // paperId usually looks like '2301.12345' (ArXiv) or 'PMC123456' (PubMed)
+            const isPMC = paperId.startsWith('PMC');
+            const extLink = isPMC ? `https://www.ncbi.nlm.nih.gov/pmc/articles/${paperId}` : `https://arxiv.org/abs/${paperId}`;
+
             container.innerHTML = `
-                <div style="padding:1.5rem; background:#fff1f2; text-align:center; border:1px dashed #e11d48; border-radius:0.5rem;">
-                    <i class="fa-solid fa-ban" style="font-size:1.5rem; color:#e11d48; margin-bottom:0.5rem; display:block;"></i>
-                    <p style="margin:0; font-size:0.8rem; color:#be123c;">Image blocked by ArXiv</p>
-                    <a href="https://arxiv.org/html/${paperId}" target="_blank" style="display:inline-block; margin-top:0.5rem; color:#e11d48; font-weight:600; text-decoration:underline; font-size:0.8rem;">
-                        Open Paper to View Figure <i class="fa-solid fa-external-link-alt"></i>
-                    </a>
+                <div style="padding:1.5rem; background:#f8fafc; text-align:center; border:1px dashed var(--border); border-radius:0.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+                    <i class="fa-regular fa-image" style="font-size:2rem; color:var(--text-light); margin-bottom:0.5rem;"></i>
+                    <p style="margin:0 0 0.5rem 0; font-size:0.8rem; color:var(--text-light);">Image preview not available</p>
+                    <div style="display:flex; gap:0.5rem;">
+                         <a href="/paper/${paperId}" target="_blank" style="padding:0.5rem 1rem; background:white; border:1px solid var(--border); border-radius:0.25rem; color:var(--text-main); font-size:0.8rem; text-decoration:none; font-weight:500; transition:all 0.2s;">
+                            <i class="fa-regular fa-file-lines"></i> Internal View
+                        </a>
+                        <a href="${extLink}" target="_blank" style="padding:0.5rem 1rem; background:white; border:1px solid var(--border); border-radius:0.25rem; color:var(--primary); font-size:0.8rem; text-decoration:none; font-weight:500; transition:all 0.2s;">
+                            <i class="fa-solid fa-external-link-alt"></i> Original Source
+                        </a>
+                    </div>
                 </div>
             `;
         }
