@@ -60,6 +60,12 @@ class Extractor:
             soup = BeautifulSoup(content, 'html.parser')
 
         paper_id = os.path.basename(filepath).replace('.html', '').replace('.xml', '')
+
+        # -------------------- AGGIUNTIVO ----------------------------
+        # Caricare metadati extra (abstract) dal JSON
+
+
+        # ------------------------------------------------------------
         
         if paper_id.startswith("PMC") or filepath.endswith('.xml'):
             return self._process_pubmed(soup, paper_id)
@@ -67,6 +73,25 @@ class Extractor:
             return self._process_arxiv(soup, paper_id)
 
     def _process_arxiv(self, soup, paper_id):
+
+        # ----------- AGGIUNTIVO ---------------------
+        # Estrazione Titolo HTML standard
+        h1 = soup.find("h1", class_="title")
+        title_text = h1.get_text(strip=True).replace("Title:", "").strip() if h1 else soup.title.get_text(strip=True)
+
+        #Estrazione abstract
+        abstract_text = ""
+        abstract_node = soup.find('div', class_='ltx_abstract') or soup.find(class_='abstract')
+        if abstract_node:
+            title_node = abstract_node.find(['h6', 'h1', 'h2', 'strong'], string=re.compile(r'Abstract', re.I))
+            if title_node: 
+                title_node.decompose() # serve a togliere la parola abstract all'inizio
+            abstract_text = abstract_node.get_text(separator=' ', strip=True)
+
+        # --------------------------------------------
+
+
+
         # --- 1. Extract Paper Text (Cleaned) ---
         # We target 'ltx_document' which is specific to LaTeXML output (ArXiv HTML format)
         article_body = soup.find('article', class_='ltx_document') or soup.body
@@ -136,10 +161,29 @@ class Extractor:
                 "mentions": [],
                 "context_paragraphs": []
             })
-            
-        return self._post_process_context(paper_id, full_text, tables, figures, paragraphs)
+
+        # ------- AGGIUNTIVO ----------
+        # ho aggiunto title_text e abstract_text    
+        return self._post_process_context(paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs)
 
     def _process_pubmed(self, soup, paper_id):
+
+        # ------------ AGGIUNTIVO ----------
+        # Estrazione titolo
+        article_title = soup.find("article-title")
+        title_text = article_title.get_text(strip=True) if article_title else "No title"
+
+        #Estrazione abstract
+        abstract_text = ""
+        abstract_node = soup.find('abstract')
+        if abstract_node:
+            title = abstract_node.find('title')
+            if title: title.decompose()
+            abstract_text = abstract_node.get_text(separator=' ', strip=True)
+
+        # -----------------------------------
+
+
         # PubMed Central XML structure
         # If the input was XML, soup should be initialized with 'xml' parser ideally, 
         # but 'html.parser' often handles XML tags okay-ish, or we prefer to be explicit in process_file.
@@ -204,10 +248,14 @@ class Extractor:
                 "mentions": [],
                 "context_paragraphs": []
             })
-            
-        return self._post_process_context(paper_id, full_text, tables, figures, paragraphs)
 
-    def _post_process_context(self, paper_id, full_text, tables, figures, paragraphs):
+        # ------- AGGIUNTIVO ----------
+        # ho aggiunto title_text e abstract_text     
+        return self._post_process_context(paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs)
+
+    # ------- AGGIUNTIVO ----------
+    # ho aggiunto title_text e abstract_text 
+    def _post_process_context(self, paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs):
         # Common logic for Mentions and Context
         
         # Helper to process list (modify in place)
@@ -217,8 +265,12 @@ class Extractor:
         for item in figures:
             self._fill_context(item, paragraphs, is_table=False)
 
+        # ------- AGGIUNTIVO ----------
+        # ho aggiunto title_text e abstract_text 
         return {
             "paper_id": paper_id,
+            "title": title_text,
+            "abstract": abstract_text,
             "full_text": full_text,
             "tables": tables,
             "figures": figures
