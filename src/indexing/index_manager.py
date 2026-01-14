@@ -75,20 +75,32 @@ class IndexManager:
             data (dict): Unified dictionary containing paper content and metadata.
         """
         actions = []
+
+        # --------------- AGGIUNTIVO  e MODIFICATO ------------------
+        # Ho messo il dizionario per source in article source e faccio il controllo sulla data
+        # infatti elastichsearch va in errore se la data manca
+
+        article_source =  {
+                "title": data.get("title", ""),
+                "authors": data.get("authors", []),
+                #"date": data.get("date", ""),
+                "abstract": data.get("abstract", ""),
+                "full_text": data.get("full_text", ""),
+                "source": data.get("source", "arxiv")
+            }
+        
+        if data.get("date") and str(data["date"]).strip(): article_source["date"] = data["date"]
+        
         
         # 1. Prepare Article Document
         article_doc = {
             "_index": "articles",
             "_id": data["paper_id"],
-            "_source": {
-                "title": data.get("title", ""),
-                "authors": data.get("authors", []),
-                "date": data.get("date", ""),
-                "abstract": data.get("abstract", ""),
-                "full_text": data.get("full_text", ""),
-                "source": data.get("source", "arxiv")
-            }
+            "_source": article_source
         }
+
+        # -----------------------------------
+
         actions.append(article_doc)
         
         # 2. Prepare Table Documents
