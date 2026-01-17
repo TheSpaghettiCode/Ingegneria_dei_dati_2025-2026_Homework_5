@@ -163,11 +163,27 @@ def image_proxy():
         "Referer": "https://www.ncbi.nlm.nih.gov/" 
     }
 
-    print(f"PROXY TRY 1 (Direct): {image_url}")
+    # SE È ARXIV: Dobbiamo fingere di essere sulla pagina del paper
+    if "arxiv.org" in image_url:
+        # Estraiamo l'ID per creare un Referer credibile
+        # L'URL è tipo https://arxiv.org/html/2209.15032/...
+        match = re.search(r'arxiv.org/html/([^/]+)', image_url)
+        if match:
+            paper_id = match.group(1)
+            headers["Referer"] = f"https://arxiv.org/html/{paper_id}"
+        else:
+             headers["Referer"] = "https://arxiv.org/"
+             
+    # SE È PUBMED (Il codice che avevamo già)
+    elif "ncbi.nlm.nih.gov" in image_url:
+        headers["Referer"] = "https://www.ncbi.nlm.nih.gov/"
+
+    print(f"PROXY REQ: {image_url}")
+
 
     try:
         # TENTATIVO 1: URL Diretto (quello che abbiamo costruito noi)
-        req = requests.get(image_url, stream=True, headers=headers, timeout=10)
+        req = requests.get(image_url, stream=True, headers=headers, timeout=15, allow_redirects=True)
         
         # Se funziona (200), restituiamo l'immagine
         if req.status_code == 200:
@@ -215,6 +231,38 @@ def image_proxy():
                                             content_type=blob_req.headers.get('content-type', 'image/jpeg'))
             
             print("  -> Fallback fallito. Impossibile trovare immagine alternativa.")
+        
+        # NUOVO: TENTATIVO 2 per ArXiv (Fallback versione)
+        # FALLBACK PER ARXIV (Gestione errori 404)
+        if req.status_code == 404 and "arxiv.org" in image_url:
+            print(f"  -> ArXiv 404 su: {image_url}")
+            
+            # Lista di tentativi per riparare l'URL
+            alternatives = []
+            
+            # TENTATIVO A: Manca la versione 'v1'? (es. .../2408.13040/x1.png)
+            if "v1" not in image_url and "/html/" in image_url:
+                # Cerca un pattern tipo /1234.5678/ e aggiungi v1
+                match = re.search(r'/html/(\d+\.\d+)/', image_url)
+                if match:
+                    paper_id_raw = match.group(1)
+                    alternatives.append(image_url.replace(paper_id_raw, f"{paper_id_raw}v1"))
+
+            # TENTATIVO B: C'è '/assets/' di troppo? (es. .../assets/x1.png -> .../x1.png)
+            if "/assets/" in image_url:
+                alternatives.append(image_url.replace("/assets/", "/"))
+
+            # Eseguiamo i tentativi
+            for alt_url in alternatives:
+                print(f"  -> Provo variante: {alt_url}")
+                try:
+                    req_alt = requests.get(alt_url, stream=True, headers=headers, timeout=10)
+                    if req_alt.status_code == 200:
+                        print("  -> VARIANT FOUND!")
+                        return Response(stream_with_context(req_alt.iter_content(chunk_size=1024)), 
+                                content_type=req_alt.headers.get('content-type', 'image/jpeg'))
+                except:
+                    pass
 
         # Se siamo qui, tutti i tentativi sono falliti
         return f"Errore remoto: {req.status_code}", 404

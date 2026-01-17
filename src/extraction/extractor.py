@@ -2,7 +2,7 @@ import os
 from bs4 import BeautifulSoup
 import re
 import json
-
+from urllib.parse import urljoin # Assicurati che sia importato
 class Extractor:
     """
     Class responsible for parsing HTML content of scientific papers to extract:
@@ -146,8 +146,21 @@ class Extractor:
          # --- 3. Extract Figures ---
         # --- Dentro _process_arxiv, sezione Figure ---
         
+        
+
         html_figures = soup.find_all('figure')
         
+        # 1. GESTIONE VERSIONE (v1, v2...)
+        # Se l'ID non ha la versione, aggiungiamo 'v1' di default.
+        # Questo è CRUCIALE perché ArXiv HTML richiede la versione nell'URL.
+        versioned_id = paper_id
+        if "v" not in paper_id:
+             versioned_id = f"{paper_id}v1"
+             
+        # La base deve finire con lo slash '/' affinché urljoin funzioni bene
+        base_paper_html = f"https://arxiv.org/html/{versioned_id}/"
+        base_domain = "https://arxiv.org"
+
         for i, fig in enumerate(html_figures):
             fig_id = fig.get('id', f"fig_{i}")
             caption = fig.find('figcaption')
@@ -158,13 +171,24 @@ class Extractor:
             
             if img_tag and img_tag.get('src'):
                 src = img_tag.get('src')
-                # CORREZIONE: Se l'URL è relativo (non inizia con http), aggiungiamo il dominio
+                
+                # PULIZIA PREVENTIVA DEL SRC
+                # A volte gli scraper catturano spazi vuoti o caratteri strani
+                src = src.strip()
+
                 if src.startswith('http'):
                     img_url = src
+                elif src.startswith('/'):
+                    # Percorso assoluto (raro)
+                    img_url = urljoin(base_domain, src)
                 else:
-                    # Costruiamo l'URL assoluto basato sull'ID del paper
-                    # Nota: Funziona solo se stai usando arxiv.org/html/ID
-                    img_url = f"https://arxiv.org/html/{paper_id}/{src}"
+                    # Percorso relativo: Lo attacchiamo alla base versionata
+                    # Esempio: base ".../2408.13040v1/" + src "x1.png" = ".../2408.13040v1/x1.png"
+                    img_url = urljoin(base_paper_html, src)
+            
+            # Filtro per evitare di indicizzare icone o loghi di ArXiv
+            if not img_url or "logo" in img_url or "icon" in img_url:
+                continue
 
             figures.append({
                 "figure_id": fig_id,
