@@ -56,7 +56,12 @@ def search():
     query = request.args.get('query', '')
     index_type = request.args.get('index_type', 'articles')
     source_type = request.args.get('source_type', 'all')
-    
+
+    print("--- QUERY APP ---")
+    import json
+    print(json.dumps(query, indent=2)) # Stampa la query esatta che usa l'App
+    print("-----------------")
+   
     # --- LEGGI PAGINA ---
     try:
         page = int(request.args.get('page', 1))
@@ -69,11 +74,36 @@ def search():
     
     target_index = index_type.lower()
     
-    # --- PASSA PAGINA ALL'ENGINE ---
-    # Otteniamo un dizionario {'results': [...], 'total': N}
+    # --- 1. DEFINIZIONE CAMPI E PESI (BOOSTING) ---
+    # Qui diciamo al motore dove cercare e cosa è più importante.
+    # Il numero dopo ^ indica quanto "pesa" quel campo.
+    
+    search_fields = None # Default (cerca ovunque)
+
+    if target_index == 'tables':
+        search_fields = [
+            "caption^3",          # La caption è fondamentale (peso 3x)
+            "body",               # Il contenuto della tabella
+            "mentions"  # Paragrafi citanti
+        ]
+    elif target_index == 'figures':
+        search_fields = [
+            "caption^3",          # Caption figura fondamentale
+            "mentions",           # Chi cita la figura
+            "context_paragraphs"
+        ]
+    elif target_index == 'articles':
+        search_fields = [
+            "title^3",            # Titolo articolo importantissimo
+            "abstract^2",         # Abstract molto importante
+            "full_text"           # Testo completo
+        ]
+
+    # --- 2. PASSA I CAMPI ALL'ENGINE ---
     search_data = engine.search(
         index=target_index, 
         query=query, 
+        fields=search_fields,  # <--- FONDAMENTALE: Passiamo i campi pesati qui!
         filters={"source": source_type} if source_type != "all" else None,
         page=page,  
         size=10     

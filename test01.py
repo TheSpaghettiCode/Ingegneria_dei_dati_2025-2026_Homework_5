@@ -6,7 +6,7 @@ ES_HOST = "http://localhost:9200"
 INDICES = {
     "articles": ["title^3", "abstract^2", "full_text"],
     "tables":   ["caption^3", "body", "mentions"],
-    "figures":  ["caption^3", "context_paragraphs", "mentions"]
+    "figures":  ["caption^3", "mentions","context_paragraphs"]
 }
 
 class Colors:
