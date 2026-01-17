@@ -112,6 +112,7 @@ class IndexManager:
         for tbl in data.get("tables", []):
             table_doc = {
                 "_index": "tables",
+                "_id": tbl["table_id"],
                 "_source": {
                     "paper_id": data["paper_id"],
                     "table_id": tbl["table_id"],
@@ -129,6 +130,7 @@ class IndexManager:
         for fig in data.get("figures", []):
             fig_doc = {
                 "_index": "figures",
+                "_id": fig["figure_id"],
                 "_source": {
                     "paper_id": data["paper_id"],
                     "figure_id": fig["figure_id"],

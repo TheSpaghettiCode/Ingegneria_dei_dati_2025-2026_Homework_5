@@ -75,6 +75,10 @@ class Extractor:
 
     def _process_arxiv(self, soup, paper_id):
 
+        # 1. PULIZIA ID PAPER (Rimuoviamo la versione v1, v2...)
+        # "2409.13049v2" -> "2409.13049"
+        clean_paper_id = paper_id.split('v')[0] if 'v' in paper_id else paper_id
+
         # ----------- AGGIUNTIVO ---------------------
         # Estrazione Titolo HTML standard
         h1 = soup.find("h1", class_="title")
@@ -109,17 +113,24 @@ class Extractor:
         html_tables = soup.find_all('table', class_='ltx_table') or soup.find_all('table')
         
         for i, tbl in enumerate(html_tables):
-            table_id = f"tab_{i}"
+            # Recuperiamo l'ID originale dal tag HTML se esiste (es. "S1.T1")
+            # Se non esiste, usiamo un contatore (es. "tab_0")
+            raw_id = tbl.get('id', f"tab_{i}")
+            # 2. CREAZIONE ID UNIVOCO GLOBALE
+            # Combiniamo ID Paper + ID Tabella
+            # Es: "2409.13049_S1.T1"
+            unique_table_id = f"{clean_paper_id}_{raw_id}"
+            
             # Try to find the wrapper figure element which usually contains the caption details
             parent = tbl.find_parent('figure')
             caption_text = ""
             
             # ID di default se non ne troviamo altri
-            table_id = f"tab_{i}"
+            
             # Extract Table ID and Caption from parent figure if available
             if parent:
                 if parent.get('id'):
-                    table_id = parent.get('id')
+                    unique_table_id = parent.get('id')
                 caption = parent.find('figcaption')
                 if caption:
                     caption_text = caption.get_text(strip=True)
@@ -135,7 +146,7 @@ class Extractor:
             
              
             tables.append({
-                "table_id": table_id,
+                "table_id": unique_table_id,
                 "caption": caption_text,
                 "body": body_text,
                 "html": str(tbl),
@@ -162,7 +173,10 @@ class Extractor:
         base_domain = "https://arxiv.org"
 
         for i, fig in enumerate(html_figures):
-            fig_id = fig.get('id', f"fig_{i}")
+            raw_id = fig.get('id', f"fig_{i}")
+            
+            # Es: "2409.13049_fig_1"
+            unique_fig_id = f"{clean_paper_id}_{raw_id}"
             caption = fig.find('figcaption')
             caption_text = caption.get_text(strip=True) if caption else ""
             
@@ -191,7 +205,7 @@ class Extractor:
                 continue
 
             figures.append({
-                "figure_id": fig_id,
+                "figure_id": unique_fig_id,
                 "url": img_url,
                 "caption": caption_text,
                 "mentions": [],
@@ -268,9 +282,13 @@ class Extractor:
             paper_id = ids_data.get('pmid', ids_data.get('doi', "UNKNOWN_ID"))
         
         # -------------------------------------------------
-        # Pulizia ID per URL (Rimuove 'PMC' se presente per evitare duplicati dopo)
-        # Es: se paper_id è "PMC12345" diventa "12345". Se è "12345" resta "12345".
-        clean_pmc_id = paper_id.replace("PMC", "") if paper_id else ""
+        # PULIZIA ID E STANDARDIZZAZIONE
+        # Assicuriamoci che l'ID del paper sia sempre pulito (solo numeri)
+        clean_pmc_id = paper_id.replace("PMC", "") if paper_id else "00000"
+        
+        # Creiamo un prefisso standard per generare gli ID univoci
+        # Es: Se clean_pmc_id è "12345", il prefisso è "PMC12345"
+        standard_paper_id = f"PMC{clean_pmc_id}"
 
         # ------------ AGGIUNTIVO ----------
         # Estrazione titolo
@@ -296,7 +314,13 @@ class Extractor:
         # 2. Extract Tables (XML: <table-wrap>)
         table_wraps = soup.find_all('table-wrap')
         for i, wrap in enumerate(table_wraps):
-            table_id = wrap.get('id', f"tab_{i}")
+            # Recuperiamo l'ID originale (es. "T1")
+            raw_id = wrap.get('id', f"tab_{i}")
+            
+            # GENERAZIONE ID UNIVOCO (Paper ID + Table ID)
+            # Questo evita duplicati se ricarichi lo stesso paper
+            unique_table_id = f"{standard_paper_id}_{raw_id}"
+            
             
             caption = wrap.find('caption')
             caption_text = caption.get_text(strip=True) if caption else ""
@@ -315,11 +339,11 @@ class Extractor:
             html_content = self.xml_table_to_html(tbl)
             
             # DEBUG PRINT (Fallo apparire nel terminale mentre indicizzi!)
-            print(f"DEBUG TABLE {table_id}: Body Len={len(body_text)}, HTML Len={len(html_content)}")
+            print(f"DEBUG TABLE {unique_table_id}: Body Len={len(body_text)}, HTML Len={len(html_content)}")
                 
 
             tables.append({
-                "table_id": table_id,
+                "table_id": unique_table_id,
                 "caption": caption_text,
                 "body": body_text,
                 "html": str(tbl) if tbl else "",
@@ -331,7 +355,11 @@ class Extractor:
         # --- Dentro _process_pubmed, sezione Figure ---
         fig_wraps = soup.find_all('fig')
         for i, wrap in enumerate(fig_wraps):
-            fig_id = wrap.get('id', f"fig_{i}")
+            raw_id = wrap.get('id', f"fig_{i}")
+            
+            # GENERAZIONE ID UNIVOCO
+            # Es: PMC12345_F1
+            unique_fig_id = f"{standard_paper_id}_{raw_id}"
             
             caption = wrap.find('caption')
             caption_text = caption.get_text(strip=True) if caption else ""
@@ -351,7 +379,7 @@ class Extractor:
                 img_url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{clean_pmc_id}/bin/{base_href}"
             
             figures.append({
-                "figure_id": fig_id,
+                "figure_id": unique_fig_id,
                 "url": img_url,
                 "caption": caption_text,
                 "mentions": [],
