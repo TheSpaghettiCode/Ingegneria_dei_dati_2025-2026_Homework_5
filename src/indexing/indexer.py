@@ -54,11 +54,12 @@ def main():
             
             print(f"Processing {paper_id}...")
 
+            '''
             # Check if already indexed
             if indexer.es.exists(index="articles", id=paper_id):
                  print(f"  -> Article {paper_id} already indexed. Skipping.")
                  continue
-            
+            '''
             # --- 4. Extract Data ---
             try:
                 data = extractor.process_file(filepath)

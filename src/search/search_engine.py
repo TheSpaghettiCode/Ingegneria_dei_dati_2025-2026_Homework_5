@@ -1,31 +1,13 @@
 from elasticsearch import Elasticsearch
 
 class SearchEngine:
-    """
-    Wrapper class for Elasticsearch search operations.
-    Handles query construction for articles, tables, and figures.
-    """
-    def __init__(self, es_host="http://localhost:9200"):
+    def __init__(self, host="http://localhost:9200"):
+        self.es = Elasticsearch(host)
+
+    # NOTA BENE: Qui abbiamo aggiunto 'page=1' e 'size=10'
+    def search(self, index, query, fields=None, filters=None, page=1, size=10):
         """
-        Initialize the SearchEngine.
-        
-        Args:
-            es_host (str): Elasticsearch server URL.
-        """
-        self.es = Elasticsearch(es_host)
-        
-    def search(self, index, query, fields=None, filters=None):
-        """
-        Perform a search on the specified index using a boolean query string.
-        
-        Args:
-           index (str): The name of the index to search (e.g., 'articles', 'tables', 'figures').
-           query (str): The search query string (supports Lucene syntax like 'speech AND text').
-           fields (list): Optional list of fields to restrict the search to.
-           filters (dict): Optional dictionary of exact match filters (e.g., {"source": "pubmed"}).
-           
-        Returns:
-            list: A list of search hits (dictionaries) from Elasticsearch.
+        Esegue la ricerca su Elasticsearch con supporto alla PAGINAZIONE.
         """
         
         # Base Query
@@ -58,11 +40,20 @@ class SearchEngine:
             }
         }
         
+        # --- CALCOLO OFFSET PER PAGINAZIONE ---
+        # Questa è la parte nuova che mancava
+        start_from = (page - 1) * size
+        # --------------------------------------
+
         try:
-            # Execute search
-            res = self.es.search(index=index, body=body)
-            # Return the list of hits
-            return res['hits']['hits']
+            # Passiamo from_ e size a Elasticsearch
+            res = self.es.search(index=index, body=body, from_=start_from, size=size)
+            
+            # Restituiamo il dizionario con total e results
+            return {
+                "results": res['hits']['hits'],
+                "total": res['hits']['total']['value']
+            }
         except Exception as e:
             print(f"Search error: {e}")
-            return []
+            return {"results": [], "total": 0}

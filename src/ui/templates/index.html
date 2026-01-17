@@ -35,6 +35,45 @@
             overflow: hidden;
         }
 
+        /* Stile per la paginazione */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .page-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--bg-body);
+        }
+
+        .page-info {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
         /* SIDEBAR */
         .sidebar {
             width: 280px;
@@ -174,6 +213,15 @@
             overflow-y: auto;
         }
 
+        /* RESULTS HEADER (NUOVO STILE AGGIUNTO) */
+        #results-header {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: none;
+        }
+
         /* RESULTS */
         .results-grid {
             display: flex;
@@ -239,6 +287,22 @@
             display: flex;
             gap: 1rem;
             align-items: center;
+        }
+        
+        /* PULSANTE SOURCE (NUOVO STILE AGGIUNTO) */
+        .btn-source {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+        .btn-source:hover {
+            background: #f1f5f9;
+            color: var(--primary);
         }
 
         /* Specific Layouts */
@@ -358,12 +422,59 @@
             color: var(--text-main);
             margin-bottom: 0.5rem;
         }
+
+                /* --- STILI PER LE TABELLE --- */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: white;
+        }
+
+        /* Stile per tabelle generate dall'HTML grezzo o dal parser */
+        .rendered-table table, 
+        .table-responsive table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            white-space: nowrap; /* Evita che le celle vadano a capo troppo presto */
+        }
+
+        .rendered-table th, 
+        .table-responsive th,
+        .rendered-table td, 
+        .table-responsive td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .rendered-table th, 
+        .table-responsive th,
+        .rendered-table thead tr {
+            background-color: #f8fafc;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Zebra striping per le righe */
+        .rendered-table tr:nth-child(even),
+        .table-responsive tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        /* Hover effect */
+        .rendered-table tr:hover,
+        .table-responsive tr:hover {
+            background-color: #eff6ff;
+        }
     </style>
 </head>
 
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="brand">
             <i class="fa-solid fa-microscope"></i>
@@ -412,7 +523,6 @@
         </div>
     </div>
 
-    <!-- MAIN -->
     <div class="main">
         <div class="header">
             <h2 style="margin:0; font-size:1.25rem;">Scientific Knowledge Graph Search</h2>
@@ -421,14 +531,32 @@
                 <input type="text" class="search-input" id="searchQuery"
                     placeholder="Search for keywords, authors, or concepts..." onkeypress="handleEnter(event)">
             </div>
-            <button onclick="performSearch()"
+            <button onclick="performSearch(true)"
                 style="background:var(--primary); color:white; border:none; padding:0.75rem 1.5rem; border-radius:0.5rem; cursor:pointer; font-weight:600;">Search</button>
         </div>
 
-        <div class="content" id="resultsArea">
-            <div style="text-align:center; color:var(--text-light); margin-top:4rem;">
-                <i class="fa-solid fa-magnifying-glass" style="font-size:3rem; margin-bottom:1rem; opacity:0.3;"></i>
-                <p>Select a target from the sidebar and start searching.</p>
+        <div class="content">
+            
+            <div id="results-header"></div>
+            
+            <div id="resultsArea">
+                <div style="text-align:center; color:var(--text-light); margin-top:4rem;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size:3rem; margin-bottom:1rem; opacity:0.3;"></i>
+                    <p>Select a target from the sidebar and start searching.</p>
+                </div>
+
+            </div>
+
+            <div id="pagination-controls" class="pagination-container" style="display: none;">
+                    <button class="page-btn" id="btn-prev" onclick="changePage(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+                    </button>
+                    <span class="page-info">
+                        Page <span id="current-page-display">1</span> of <span id="total-pages-display">--</span>
+                    </span>
+                    <button class="page-btn" id="btn-next" onclick="changePage(1)">
+                        Next <i class="fa-solid fa-chevron-right"></i>
+                    </button>
             </div>
         </div>
 
@@ -440,6 +568,8 @@
     <script>
         let currentIndex = 'articles';
         let currentSource = 'all';
+        let currentPage = 1;
+        const PAGE_SIZE = 10; // Deve corrispondere a quello in app.py
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
@@ -460,48 +590,102 @@
 
         function setIndex(index, el) {
             currentIndex = index;
-            // Update UI for Target Group (second group)
             const targetItems = document.querySelectorAll('.nav-group')[1].querySelectorAll('.nav-item');
             targetItems.forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-            // Re-search if query exists
-            if (document.getElementById('searchQuery').value) performSearch();
+            if (document.getElementById('searchQuery').value) performSearch(true);
         }
 
         function setSource(source, el) {
             currentSource = source;
-            // Update UI
-            // Find the Source group (first group)
             const sourceItems = document.querySelectorAll('.nav-group')[0].querySelectorAll('.nav-item');
             sourceItems.forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-
-            if (document.getElementById('searchQuery').value) performSearch();
-        }
-
-        function updateSearch() {
-            // Retired function, kept for safety but currently unused with new Sidebar logic
-            if (document.getElementById('searchQuery').value) performSearch();
+            if (document.getElementById('searchQuery').value) performSearch(true);
         }
 
         function handleEnter(e) {
-            if (e.key === 'Enter') performSearch();
+            if (e.key === 'Enter') performSearch(true);
         }
 
-        async function performSearch() {
+        async function performSearch(resetPage = false) {
             const query = document.getElementById('searchQuery').value;
             if (!query) return;
 
+            // Se stiamo facendo una nuova ricerca, torna a pagina 1
+            if (resetPage) currentPage = 1;
+
             const resultsArea = document.getElementById('resultsArea');
+            const headerArea = document.getElementById('results-header');
+            const paginationControls = document.getElementById('pagination-controls');
+
             resultsArea.innerHTML = '<div style="text-align:center; margin-top:2rem;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i></div>';
+            headerArea.style.display = 'none';
+            paginationControls.style.display = 'none'; // Nascondi paginazione durante il caricamento
 
             try {
-                const res = await fetch(`/api/search?index_type=${currentIndex}&source_type=${currentSource}&query=${encodeURIComponent(query)}`);
-                const results = await res.json();
+                // Passiamo &page=${currentPage}
+                const res = await fetch(`/api/search?index_type=${currentIndex}&source_type=${currentSource}&query=${encodeURIComponent(query)}&page=${currentPage}`);
+                const data = await res.json();
+                
+                let results = data.results || [];
+                let total = data.total || 0;
+
+                if (results.length > 0) {
+                    headerArea.innerHTML = `Found <span style="color:var(--primary)">${total}</span> results for "${query}"`;
+                    headerArea.style.display = 'block';
+                    
+                    // Mostra e aggiorna la paginazione
+                    updatePaginationUI(total);
+                }
+
                 renderResults(results);
             } catch (e) {
                 resultsArea.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
             }
+        }
+
+        // Nuova funzione per gestire i bottoni
+        function updatePaginationUI(totalResults) {
+            const paginationControls = document.getElementById('pagination-controls');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const pageDisplay = document.getElementById('current-page-display');
+            
+            // --- NUOVO: Elemento per il totale pagine ---
+            const totalPagesDisplay = document.getElementById('total-pages-display'); 
+
+            // Calcoliamo il numero totale di pagine (es. 105 risultati / 10 per pagina = 11 pagine)
+            const totalPages = Math.ceil(totalResults / PAGE_SIZE);
+
+            // Se c'è solo una pagina (o zero risultati), nascondi i controlli
+            if (totalPages <= 1) {
+                paginationControls.style.display = 'none';
+                return;
+            }
+
+            paginationControls.style.display = 'flex';
+            
+            // Aggiorniamo i numeri
+            pageDisplay.innerText = currentPage;
+            totalPagesDisplay.innerText = totalPages; // <-- Scriviamo il totale qui
+
+            // Gestione bottone Previous
+            btnPrev.disabled = (currentPage === 1);
+
+            // Gestione bottone Next
+            btnNext.disabled = (currentPage >= totalPages);
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            performSearch(false); // false = non resettare la pagina
+            // Scrolla in alto quando cambi pagina
+            document.querySelector('.content').scrollTop = 0;
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') performSearch(true); // Reset a pag 1
         }
 
         function renderResults(results) {
@@ -513,25 +697,55 @@
                 return;
             }
 
-            // Filters are now in the sidebar, so we don't inject them here anymore.
-
             const grid = document.createElement('div');
             grid.className = 'results-grid';
+            
+            
+
+
 
             results.forEach(hit => {
                 const src = hit._source;
-                const paperId = hit._id; // Use the ES document ID reliably
+                const paperId = hit._id; 
                 const card = document.createElement('div');
                 card.className = 'card';
+///////////////////////////////////////////////
+               // DEBUG: Guarda nella console del browser (F12)
+                if (currentIndex === 'tables') {
+                    console.log("Tabella ID:", hit._id);
+                    console.log("Ha campo HTML?", src.html ? "SI" : "NO");
+                    console.log("Lunghezza HTML:", src.html ? src.html.length : 0);
+                }
+///////////////////////////////////////////////
 
                 if (currentIndex === 'articles') {
+                    
+                    // --- CORREZIONE URL: Genera link sicuro per ArXiv/PubMed se manca l'url nel database ---
+                    let externalUrl = src.url;
+                    if (!externalUrl || !externalUrl.startsWith('http')) {
+                        if (paperId.startsWith('PMC')) {
+                             externalUrl = `https://www.ncbi.nlm.nih.gov/pmc/articles/${paperId}/`;
+                        } else {
+                             // Default to ArXiv
+                             externalUrl = `https://arxiv.org/abs/${paperId}`;
+                        }
+                    }
+                    // -----------------------------------------------------------------------------------
+
                     card.innerHTML = `
                         <div class="card-header-flex">
                             <span class="type-badge articles">Paper</span>
                             <span class="card-id">ID: ${paperId}</span>
                         </div>
-                        <a href="/paper/${paperId}" class="card-title">${src.title}</a>
-                        <div class="card-meta">
+                        
+                        <div style="display:flex; align-items:center;">
+                            <a href="/paper/${paperId}" class="card-title" style="margin-bottom:0;">${src.title}</a>
+                            <a href="${externalUrl}" target="_blank" class="btn-source">
+                                <i class="fa-solid fa-external-link-alt"></i> Open Source
+                            </a>
+                        </div>
+
+                        <div class="card-meta" style="margin-top:0.5rem;">
                             <span><i class="fa-regular fa-user"></i> ${src.authors ? src.authors.slice(0, 3).join(', ') + (src.authors.length > 3 ? ' et al.' : '') : 'Unknown'}</span>
                             <span><i class="fa-regular fa-calendar"></i> ${src.date ? src.date.slice(0, 10) : ''}</span>
                         </div>
@@ -539,7 +753,43 @@
                         <div class="text-content">${src.abstract ? src.abstract.slice(0, 300) + '...' : ''}</div>
                         ${createExpander('Read Full Abstract', src.abstract)}
                     `;
-                } else if (currentIndex === 'tables') {
+                   
+                }  else if (currentIndex === 'tables') {
+                    
+                    // LOGICA PER VISUALIZZARE LA TABELLA
+                    let tableVisualContent = '';
+                    
+                    // Opzione A: Usiamo l'HTML originale se presente (Salvato dall'Extractor)
+                    if (src.html && src.html.length > 20) {
+                        // Avvolgiamo l'HTML grezzo in un div responsive
+                        tableVisualContent = `<div class="table-responsive">${src.html}</div>`;
+                    } 
+                    // Opzione B: Fallback - Parsiamo il testo grezzo (body) in una tabella
+                    else if (src.body) {
+                        const rows = src.body.split('\n').filter(r => r.trim() !== '');
+                        if (rows.length > 0) {
+                            let rowsHtml = rows.map((row, idx) => {
+                                // Separa per 2 o più spazi, oppure tab, oppure pipe |
+                                const cells = row.split(/\s{2,}|\t|\|/).filter(c => c.trim() !== '');
+                                const tag = idx === 0 ? 'th' : 'td'; // Assumiamo la prima riga sia header
+                                const cellsHtml = cells.map(c => `<${tag}>${c}</${tag}>`).join('');
+                                return `<tr>${cellsHtml}</tr>`;
+                            }).join('');
+                            
+                            tableVisualContent = `
+                                <div class="table-responsive">
+                                    <table class="rendered-table">
+                                        <tbody>${rowsHtml}</tbody>
+                                    </table>
+                                </div>
+                            `;
+                        } else {
+                            tableVisualContent = `<pre>${src.body}</pre>`;
+                        }
+                    } else {
+                        tableVisualContent = '<div style="color:var(--text-light); font-style:italic;">No table content available.</div>';
+                    }
+
                     card.innerHTML = `
                         <div class="card-header-flex">
                             <span class="type-badge tables">Table</span>
@@ -551,25 +801,26 @@
                         
                         <div class="caption-box">
                             <span class="field-label" style="color:#b45309;">Table Caption</span>
-                            ${src.caption}
+                            ${src.caption || 'No caption available'}
                         </div>
                         
-                        <div class="field-label">Full Body Content:</div>
-                        ${createExpander('View Body Content', `<pre>${src.body}</pre>`, true)}
+                        <div class="field-label" style="margin-top:1rem;">Table Data:</div>
+                        ${createExpander('View Table Content', tableVisualContent, true)}
                         
                         <div class="columns-2">
-                             <div>
+                                <div>
                                 <span class="field-label" style="color:#1d4ed8;">Mentions (Paragraphs citing this table):</span>
-                                ${createExpander(src.mentions?.length + ' Mentions', createList(src.mentions), false, 'border-left: 3px solid #3b82f6; background:#eff6ff;')}
-                             </div>
-                             <div>
+                                ${createExpander((src.mentions?.length || 0) + ' Mentions', createList(src.mentions), false, 'border-left: 3px solid #3b82f6; background:#eff6ff;')}
+                                </div>
+                                <div>
                                 <span class="field-label" style="color:#047857;">Context (Paragraphs matching keywords):</span>
-                                ${createExpander(src.context_paragraphs?.length + ' Context Paragraphs', createList(src.context_paragraphs, true), false, 'border-left: 3px solid #10b981; background:#ecfdf5;')}
-                             </div>
+                                ${createExpander((src.context_paragraphs?.length || 0) + ' Context Paragraphs', createList(src.context_paragraphs, true), false, 'border-left: 3px solid #10b981; background:#ecfdf5;')}
+                                </div>
                         </div>
                     `;
                 } else if (currentIndex === 'figures') {
                     const encodedUrl = src.url ? encodeURIComponent(src.url) : '';
+                    // Se c'è un URL, chiedilo al nostro proxy locale, altrimenti stringa vuota
                     const proxyUrl = src.url ? `/api/image_proxy?url=${encodedUrl}` : '';
 
                     card.innerHTML = `
@@ -579,7 +830,10 @@
                         </div>
                         <div class="figure-layout">
                             <div class="figure-img-container">
-                                ${src.url ? `<div class="img-container" data-url="${src.url}"><img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="handleImgError(this, '${src.paper_id}')"></div>` : '<div style="color:white">No Image URL</div>'}
+                                ${src.url ? 
+                                  // NOTA: Qui sotto usiamo 'proxyUrl' invece di src.url
+                                  `<div class="img-container"><img src="${proxyUrl}" class="figure-img" alt="Figure from ${src.paper_id}" onerror="handleImgError(this, '${src.paper_id}')"></div>` 
+                                  : '<div style="color:white">No Image URL</div>'}
                             </div>
                             <div>
                                 <div style="font-size:0.9rem; color:var(--secondary); margin-bottom:0.5rem;">
@@ -621,8 +875,6 @@
 
         function handleImgError(img, paperId) {
             const container = img.parentElement;
-            // Differentiate based on paper source if possible, but generic fallback is safe
-            // paperId usually looks like '2301.12345' (ArXiv) or 'PMC123456' (PubMed)
             const isPMC = paperId.startsWith('PMC');
             const extLink = isPMC ? `https://www.ncbi.nlm.nih.gov/pmc/articles/${paperId}` : `https://arxiv.org/abs/${paperId}`;
 

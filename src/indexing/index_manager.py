@@ -1,4 +1,6 @@
 from elasticsearch import Elasticsearch, helpers
+from elasticsearch.helpers import BulkIndexError
+import json
 
 class IndexManager:
     """
@@ -36,8 +38,9 @@ class IndexManager:
                         "caption": {"type": "text"},
                         "body": {"type": "text"},
                         "mentions": {"type": "text"},
+                        "html": {"type": "text", "index": False},
                         "context_paragraphs": {"type": "text"},
-                         "source": {"type": "keyword"}
+                        "source": {"type": "keyword"}
                     }
                 }
             },
@@ -62,7 +65,7 @@ class IndexManager:
         """
         for index_name, config in self.indices.items():
             if not self.es.indices.exists(index=index_name):
-                self.es.indices.create(index=index_name, body=config)
+                self.es.indices.create(index=index_name, body=config, ignore=400)
                 print(f"Created index: {index_name}")
             else:
                 print(f"Index {index_name} already exists.")
@@ -81,14 +84,16 @@ class IndexManager:
         # infatti elastichsearch va in errore se la data manca
 
         article_source =  {
+                "paper_id": data["paper_id"],
                 "title": data.get("title", ""),
                 "authors": data.get("authors", []),
-                #"date": data.get("date", ""),
+                #"date": data.get("date", "N/A"),
                 "abstract": data.get("abstract", ""),
                 "full_text": data.get("full_text", ""),
                 "source": data.get("source", "arxiv")
             }
         
+
         if data.get("date") and str(data["date"]).strip(): article_source["date"] = data["date"]
         
         
@@ -113,6 +118,7 @@ class IndexManager:
                     "caption": tbl["caption"],
                     "body": tbl["body"],
                     "mentions": tbl["mentions"],
+                    "html": tbl.get("html", ""),
                     "context_paragraphs": tbl["context_paragraphs"],
                     "source": data.get("source", "arxiv")
                 }
@@ -137,5 +143,17 @@ class IndexManager:
             
         # Execute Bulk Indexing
         if actions:
-            helpers.bulk(self.es, actions)
-            # print(f"Indexed {len(actions)} documents for paper {data['paper_id']}")
+            try:
+                helpers.bulk(
+                    self.es, 
+                    actions, 
+                    chunk_size=20,       # <--- IMPORTANTE: Riduciamo a 50 documenti per volta (default è 500)
+                    request_timeout=60   # Diamo più tempo per rispondere
+                )
+                # print(f"Indexed {len(actions)} documents for paper {data['paper_id']}")
+            except BulkIndexError as e:
+                print(f"\nFATAL ERROR indicizzando {data['paper_id']}:")
+                # e.errors è una lista di dizionari con i dettagli di ogni fallimento
+                # Ne stampiamo solo uno per non intasare la console, di solito basta a capire
+                first_error = e.errors[0]
+                print(json.dumps(first_error, indent=2))

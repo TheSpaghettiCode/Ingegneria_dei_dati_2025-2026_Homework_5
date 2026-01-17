@@ -22,6 +22,7 @@ class Extractor:
             "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "di", "a", "da", "in", "con", "su", "per", "tra", "fra"
         ])
     
+
     def extract_keywords(self, text):
         """
         Extract meaningful keywords from a given text string.
@@ -108,11 +109,13 @@ class Extractor:
         html_tables = soup.find_all('table', class_='ltx_table') or soup.find_all('table')
         
         for i, tbl in enumerate(html_tables):
+            table_id = f"tab_{i}"
             # Try to find the wrapper figure element which usually contains the caption details
             parent = tbl.find_parent('figure')
             caption_text = ""
-            table_id = f"tab_{i}"
             
+            # ID di default se non ne troviamo altri
+            table_id = f"tab_{i}"
             # Extract Table ID and Caption from parent figure if available
             if parent:
                 if parent.get('id'):
@@ -128,8 +131,9 @@ class Extractor:
                     caption_text = cap.get_text(strip=True)
             
             # Extract Table Body Text (cell contents) as a single string
-            body_text = tbl.get_text(separator=' ', strip=True)
+            body_text = tbl.get_text(separator=' | ', strip=True) if tbl else ""
             
+             
             tables.append({
                 "table_id": table_id,
                 "caption": caption_text,
@@ -139,21 +143,29 @@ class Extractor:
                 "context_paragraphs": [] # Filled later
             })
 
-        # --- 3. Extract Figures ---
-        # Figures are identified by <figure class="ltx_figure">
-        html_figures = soup.find_all('figure', class_='ltx_figure')
+         # --- 3. Extract Figures ---
+        # --- Dentro _process_arxiv, sezione Figure ---
+        
+        html_figures = soup.find_all('figure')
         
         for i, fig in enumerate(html_figures):
             fig_id = fig.get('id', f"fig_{i}")
-            
-            # Extract Image URL (src attribute)
-            img = fig.find('img')
-            img_url = img.get('src') if img else ""
-            
-            # Extract Caption
             caption = fig.find('figcaption')
             caption_text = caption.get_text(strip=True) if caption else ""
             
+            img_tag = fig.find('img')
+            img_url = ""
+            
+            if img_tag and img_tag.get('src'):
+                src = img_tag.get('src')
+                # CORREZIONE: Se l'URL è relativo (non inizia con http), aggiungiamo il dominio
+                if src.startswith('http'):
+                    img_url = src
+                else:
+                    # Costruiamo l'URL assoluto basato sull'ID del paper
+                    # Nota: Funziona solo se stai usando arxiv.org/html/ID
+                    img_url = f"https://arxiv.org/html/{paper_id}/{src}"
+
             figures.append({
                 "figure_id": fig_id,
                 "url": img_url,
@@ -162,35 +174,95 @@ class Extractor:
                 "context_paragraphs": []
             })
 
+       
+
         # ------- AGGIUNTIVO ----------
         # ho aggiunto title_text e abstract_text    
         return self._post_process_context(paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs)
 
+    def xml_table_to_html(self, xml_table_soup):
+        """
+        Converte una tabella XML (stile JATS/PubMed) in HTML standard per il browser.
+        Trasforma <row> -> <tr>, <entry> -> <td>, ecc.
+        """
+        if not xml_table_soup:
+            return ""
+
+        # Creiamo una copia per non modificare l'oggetto originale mentre lo leggiamo
+        import copy
+        new_tbl = copy.copy(xml_table_soup)
+        
+        # Rinomina i tag XML in tag HTML
+        for tag in new_tbl.find_all(True): # Trova tutti i tag ricorsivamente
+            if tag.name == 'row':
+                tag.name = 'tr'
+            elif tag.name == 'entry':
+                tag.name = 'td'
+                # A volte <entry> ha attributi strani, meglio pulirli se danno fastidio
+                # ma per ora manteniamo gli attributi base
+            elif tag.name == 'thead':
+                tag.name = 'thead' # Spesso uguale
+            elif tag.name == 'tbody':
+                tag.name = 'tbody' # Spesso uguale
+        
+        # Rimuove namespace fastidiosi (es: <oasis:table> diventa <table>)
+        new_tbl.name = 'table' 
+        # Aggiungi classe per stile CSS
+        new_tbl['class'] = 'generated-table'
+        
+        return str(new_tbl)
+
     def _process_pubmed(self, soup, paper_id):
+    
+        # ------------ CORREZIONE: ESTRAZIONE ID ----------
+        # PubMed memorizza gli ID in <article-id pub-id-type="...">
+        # Tipi comuni: 'pmc', 'pmid', 'doi'
+        # Cerchiamo di recuperare il vero ID dall'XML se paper_id è vuoto o generico
+        
+        found_id = None
+        article_ids = soup.find_all('article-id')
+        
+        ids_data = {} # Dizionario per tenere traccia di tutti gli ID trovati
+        
+        for aid in article_ids:
+            id_type = aid.get('pub-id-type')
+            id_val = aid.get_text(strip=True)
+            ids_data[id_type] = id_val
+            
+            # Priorità: Se troviamo il PMCID, usiamo quello come paper_id principale
+            # (Nota: l'XML di solito contiene solo il numero, es: 12345. 
+            # A volte serve il prefisso 'PMC', dipende dalla tua logica di indicizzazione)
+            if id_type == 'pmc':
+                found_id = id_val
+
+        # Se abbiamo trovato un ID nell'XML, usiamolo. 
+        # Altrimenti teniamo quello passato come argomento (se esiste), o mettiamo un fallback.
+        if found_id:
+            paper_id = found_id
+        elif not paper_id or paper_id == "N\\A":
+            # Fallback su PMID o DOI se PMC non c'è
+            paper_id = ids_data.get('pmid', ids_data.get('doi', "UNKNOWN_ID"))
+        
+        # -------------------------------------------------
+        # Pulizia ID per URL (Rimuove 'PMC' se presente per evitare duplicati dopo)
+        # Es: se paper_id è "PMC12345" diventa "12345". Se è "12345" resta "12345".
+        clean_pmc_id = paper_id.replace("PMC", "") if paper_id else ""
 
         # ------------ AGGIUNTIVO ----------
         # Estrazione titolo
         article_title = soup.find("article-title")
         title_text = article_title.get_text(strip=True) if article_title else "No title"
 
-        #Estrazione abstract
+        # Estrazione abstract
         abstract_text = ""
         abstract_node = soup.find('abstract')
         if abstract_node:
+            # Rimuoviamo il titolo "Abstract" che a volte è presente nel nodo
             title = abstract_node.find('title')
             if title: title.decompose()
             abstract_text = abstract_node.get_text(separator=' ', strip=True)
-
         # -----------------------------------
 
-
-        # PubMed Central XML structure
-        # If the input was XML, soup should be initialized with 'xml' parser ideally, 
-        # but 'html.parser' often handles XML tags okay-ish, or we prefer to be explicit in process_file.
-        # However, since process_file uses 'html.parser' by default, we might re-parse if needed
-        # or just rely on tag names which works if they are distinct.
-        # Better: in process_file check extension.
-        
         full_text = soup.get_text(separator=' ', strip=True)
         paragraphs = [p for p in soup.find_all('p')]
         
@@ -202,14 +274,26 @@ class Extractor:
         for i, wrap in enumerate(table_wraps):
             table_id = wrap.get('id', f"tab_{i}")
             
-            # Caption
             caption = wrap.find('caption')
             caption_text = caption.get_text(strip=True) if caption else ""
             
-            # Body
             tbl = wrap.find('table')
-            body_text = tbl.get_text(separator=' ', strip=True) if tbl else ""
+
+            if not tbl:
+                tbl = wrap.find(lambda tag: tag.name and 'table' in tag.name)
+
             
+            # A. BODY: Testo per la ricerca
+            body_text = tbl.get_text(separator=' | ', strip=True)
+            
+            # B. HTML: CONVERSIONE OBBLIGATORIA
+            # Usiamo la funzione helper per trasformare XML -> HTML
+            html_content = self.xml_table_to_html(tbl)
+            
+            # DEBUG PRINT (Fallo apparire nel terminale mentre indicizzi!)
+            print(f"DEBUG TABLE {table_id}: Body Len={len(body_text)}, HTML Len={len(html_content)}")
+                
+
             tables.append({
                 "table_id": table_id,
                 "caption": caption_text,
@@ -220,26 +304,27 @@ class Extractor:
             })
             
         # 3. Extract Figures (XML: <fig>)
+        # --- Dentro _process_pubmed, sezione Figure ---
         fig_wraps = soup.find_all('fig')
         for i, wrap in enumerate(fig_wraps):
             fig_id = wrap.get('id', f"fig_{i}")
             
-            # Caption
             caption = wrap.find('caption')
             caption_text = caption.get_text(strip=True) if caption else ""
             
-            # Image URL in XML: <graphic xlink:href="..."/>
-            # The href is usually a local filename reference, e.g. "nihms-15000-f0001.jpg"
-            # We construct a full URL if possible, or just keep the reference.
-            # PMC full text URL: https://www.ncbi.nlm.nih.gov/pmc/articles/{paper_id}/bin/{href}.jpg
-            # Note: The extension might vary (.jpg, .gif), but usuall 'jpg' is safe guess for web or we leave as is.
             graphic = wrap.find('graphic')
             img_href = graphic.get('xlink:href') if graphic else ""
             
-            if img_href:
-                img_url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/{paper_id}/bin/{img_href}.jpg"
-            else:
-                img_url = ""
+            img_url = ""
+            if img_href and clean_pmc_id and clean_pmc_id != "UNKNOWN_ID":
+                # CORREZIONE: A volte l'href contiene già l'estensione, a volte no.
+                if ".jpg" in img_href or ".png" in img_href or ".gif" in img_href:
+                    base_href = img_href
+                else:
+                    # Defaultiamo a .jpg che è il più comune su PMC
+                    base_href = f"{img_href}.jpg"
+                
+                img_url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{clean_pmc_id}/bin/{base_href}"
             
             figures.append({
                 "figure_id": fig_id,
@@ -249,10 +334,11 @@ class Extractor:
                 "context_paragraphs": []
             })
 
-        # ------- AGGIUNTIVO ----------
-        # ho aggiunto title_text e abstract_text     
+        # Passiamo anche ids_data se vuoi salvare DOI/PMID separatamente nel post_process
         return self._post_process_context(paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs)
-
+    
+    
+    
     # ------- AGGIUNTIVO ----------
     # ho aggiunto title_text e abstract_text 
     def _post_process_context(self, paper_id, title_text, full_text, abstract_text, tables, figures, paragraphs):
@@ -287,17 +373,28 @@ class Extractor:
         
         for p in paragraphs:
             p_text = p.get_text(strip=True)
-            
-            # A. Explicit Mentions
-            # Check for ID in any links within paragraph
-            links = p.find_all('a', href=True)
             is_mentioned = False
-            for link in links:
-                href = link['href']
-                # ArXiv uses #id, PMC often uses #id too internally
-                if href.endswith(f"#{item_id}") or href == f"#{item_id}":
+            
+            # --- 1. Controllo XML (PubMed/PMC) ---
+            # PubMed usa <xref ref-type="fig" rid="fig1">
+            xrefs = p.find_all('xref')
+            for xref in xrefs:
+                rid = xref.get('rid')
+                if rid == item_id:
                     is_mentioned = True
                     break
+            
+            # --- 2. Controllo HTML standard (ArXiv) ---
+            # Se non trovato come xref, cerchiamo come link standard
+            if not is_mentioned:
+                links = p.find_all('a', href=True)
+                for link in links:
+                    href = link['href']
+                    # Puliamo l'href da # iniziale (es. "#fig1" -> "fig1")
+                    clean_href = href.lstrip('#')
+                    if clean_href == item_id:
+                        is_mentioned = True
+                        break
             
             if is_mentioned:
                 mentions.append(p_text)
@@ -306,6 +403,7 @@ class Extractor:
             p_keywords = self.extract_keywords(p_text)
             intersection = keywords.intersection(p_keywords)
             
+            # Soglia di intersezione (puoi alzarla a 3 se trovi troppi falsi positivi)
             if len(intersection) >= 2:
                 context_paragraphs.append(p_text)
         
