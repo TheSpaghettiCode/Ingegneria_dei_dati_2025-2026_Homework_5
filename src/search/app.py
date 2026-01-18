@@ -84,12 +84,15 @@ def search():
         search_fields = [
             "caption^3",          # La caption è fondamentale (peso 3x)
             "body",               # Il contenuto della tabella
+            "paper_title^1",
+            "context_paragraphs",
             "mentions"  # Paragrafi citanti
         ]
     elif target_index == 'figures':
         search_fields = [
             "caption^3",          # Caption figura fondamentale
             "mentions",           # Chi cita la figura
+            "paper_title^1",
             "context_paragraphs"
         ]
     elif target_index == 'articles':
