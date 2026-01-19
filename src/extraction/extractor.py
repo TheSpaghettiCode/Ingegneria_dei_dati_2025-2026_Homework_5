@@ -339,7 +339,7 @@ class Extractor:
             html_content = self.xml_table_to_html(tbl)
             
             # DEBUG PRINT (Fallo apparire nel terminale mentre indicizzi!)
-            print(f"DEBUG TABLE {unique_table_id}: Body Len={len(body_text)}, HTML Len={len(html_content)}")
+            #print(f"DEBUG TABLE {unique_table_id}: Body Len={len(body_text)}, HTML Len={len(html_content)}")
                 
 
             tables.append({

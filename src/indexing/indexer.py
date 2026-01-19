@@ -74,7 +74,7 @@ def main():
                     # Update fields in 'data' with metadata, preferring metadata if available
                     data['title'] = meta.get('title', data.get('title'))
                     data['authors'] = meta.get('authors', [])
-                    data['date'] = meta.get('published', '')
+                    data['date'] = meta.get('date', '')
                     data['source'] = meta.get('source', data.get('source'))
             
             # Ensure separate identification if missing

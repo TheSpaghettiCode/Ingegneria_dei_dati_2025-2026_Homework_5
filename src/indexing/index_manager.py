@@ -80,20 +80,20 @@ class IndexManager:
         actions = []
 
         # --------------- AGGIUNTIVO  e MODIFICATO ------------------
-        # Ho messo il dizionario per source in article source e faccio il controllo sulla data
-        # infatti elastichsearch va in errore se la data manca
-
+        # Ho messo il dizionario per source in article source 
+        raw_date = data.get("date") or data.get("published")
+        
         article_source =  {
                 "paper_id": data["paper_id"],
                 "title": data.get("title", ""),
                 "authors": data.get("authors", []),
-                #"date": data.get("date", "N/A"),
+                "date": raw_date,
                 "abstract": data.get("abstract", ""),
                 "full_text": data.get("full_text", ""),
                 "source": data.get("source", "arxiv")
             }
         
-
+        #controllo se la data è vuota
         if data.get("date") and str(data["date"]).strip(): article_source["date"] = data["date"]
         
         
