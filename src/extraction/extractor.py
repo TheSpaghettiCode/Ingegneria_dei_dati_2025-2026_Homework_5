@@ -160,10 +160,12 @@ class Extractor:
         
 
         html_figures = soup.find_all('figure')
+        seen_img_urls = set() #gestione deduplicati a partire dall'url
         
         # 1. GESTIONE VERSIONE (v1, v2...)
         # Se l'ID non ha la versione, aggiungiamo 'v1' di default.
         # Questo è CRUCIALE perché ArXiv HTML richiede la versione nell'URL.
+        
         versioned_id = paper_id
         if "v" not in paper_id:
              versioned_id = f"{paper_id}v1"
@@ -200,6 +202,17 @@ class Extractor:
                     # Esempio: base ".../2408.13040v1/" + src "x1.png" = ".../2408.13040v1/x1.png"
                     img_url = urljoin(base_paper_html, src)
             
+            if img_url:
+                # Normalizziamo per sicurezza (togliamo parametri query string se non servono)
+                clean_url_check = img_url.split('?')[0] 
+                
+                if clean_url_check in seen_img_urls:
+                    # DUPLICATO TROVATO! Lo saltiamo.
+                    # Questo risolve il caso fig1 vs sf1 che puntano alla stessa immagine.
+                    continue
+                
+                # Se è nuova, la aggiungiamo al set
+                seen_img_urls.add(clean_url_check)
             # Filtro per evitare di indicizzare icone o loghi di ArXiv
             if not img_url or "logo" in img_url or "icon" in img_url:
                 continue

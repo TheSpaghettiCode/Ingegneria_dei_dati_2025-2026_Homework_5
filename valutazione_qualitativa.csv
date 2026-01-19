@@ -1,0 +1,21 @@
+Scenario,Query,Index,Rank,Score,Paper_ID,Preview,Relevant
+Ricerca Medica Generica,cardiovascular risk AND ultra-processed foods,articles,1,48.50281,PMC6538975,TITOLO: Ultra-processed food intake and risk of cardiovascular disease: prospective cohort study (NutriNet-Santé),1
+Ricerca Medica Generica,cardiovascular risk AND ultra-processed foods,articles,2,45.580967,PMC8532572,"TITOLO: Ultra-processed Foods, Weight Gain, and Co-morbidity Risk",1
+Ricerca Medica Generica,cardiovascular risk AND ultra-processed foods,articles,3,44.455967,PMC10623817,"TITOLO: Associations of ultra-processed food consumption, circulating protein biomarkers, and risk of cardiovascular disease",1
+Ricerca Medica Generica,cardiovascular risk AND ultra-processed foods,articles,4,43.97075,PMC8854325,TITOLO: A score appraising Paleolithic diet and the risk of cardiovascular disease in a Mediterranean prospective cohort,1
+Ricerca Medica Generica,cardiovascular risk AND ultra-processed foods,articles,5,43.379387,PMC11494205,TITOLO: Association of ultra-processed food consumption with cardiovascular risk factors among patients with type-2 diabetes mellitus,1
+Ricerca Concetto NLP Esatto,attention mechanism,articles,1,32.895546,2403.04743v2,TITOLO: Speech Emotion Recognition Via CNN-Transformer and Multidimensional Attention Mechanism,1
+Ricerca Concetto NLP Esatto,attention mechanism,articles,2,32.895546,2412.08683v1,TITOLO: Emotional Vietnamese Speech-Based Depression Diagnosis Using Dynamic Attention Mechanism,1
+Ricerca Concetto NLP Esatto,attention mechanism,articles,3,15.304368,2306.15942v1,TITOLO: Enhanced Neural Beamformer with Spatial Information for Target Speech Extraction,1
+Ricerca Concetto NLP Esatto,attention mechanism,articles,4,14.360183,2408.06911v1,TITOLO: Heterogeneous Space Fusion and Dual-Dimension Attention: A New Paradigm for Speech Enhancement,1
+Ricerca Concetto NLP Esatto,attention mechanism,articles,5,14.014344,2308.08143v3,TITOLO: IIANet: An Intra- and Inter-Modality Attention Network for Audio-Visual Speech Separation,1
+Ricerca Statistica in Tabelle,confidence interval,tables,1,31.34406,PMC11462998,DIDASCALIA: Hazard ratio (95% confidence interval) for type 2 diabetes incidence according to ultra-process food consumption...,1
+Ricerca Statistica in Tabelle,confidence interval,tables,2,30.74623,PMC9414627,"DIDASCALIA: Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of raw food consumption....",1
+Ricerca Statistica in Tabelle,confidence interval,tables,3,30.74623,PMC9414627,"DIDASCALIA: Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of boiled food consumption....",1
+Ricerca Statistica in Tabelle,confidence interval,tables,4,30.74623,PMC9414627,"DIDASCALIA: Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of roasted food consumption....",1
+Ricerca Statistica in Tabelle,confidence interval,tables,5,30.170774,PMC9669963,DIDASCALIA: Crude and predicted mean and 95% confidence interval of dailyper capitapurchase of minimally processed and ultra-processed beverages....,1
+Ricerca Visuale (Grafici),learning curve,figures,1,43.298157,2507.06530v1,DIDASCALIA: (a)Learning curve of MarianMT...,1
+Ricerca Visuale (Grafici),learning curve,figures,2,43.298157,2507.06530v1,DIDASCALIA: (a)Learning curve of MarianMT...,1
+Ricerca Visuale (Grafici),learning curve,figures,3,43.298157,2507.06530v1,DIDASCALIA: (b)Learning curve of T5...,1
+Ricerca Visuale (Grafici),learning curve,figures,4,43.298157,2507.06530v1,DIDASCALIA: (c)Learning curve of BART...,1
+Ricerca Visuale (Grafici),learning curve,figures,5,5.527534,2509.15516v1,"DIDASCALIA: Fig. 1:Method Overview. Left: Multi-modal LLM architecture. Middle: Example prompt construction. Right: Mixed (0-shot, 10-shot) MetaICL training & eva...",1

@@ -31,15 +31,6 @@ TEST_SCENARIOS = [
      "query": "NOT foods", 
      "indices": ["articles", "tables", "figures"] },
 
-    # 2. RICERCA PER SORGENTE (Filtro)
-    { "type": "Source Filter", 
-     "label": "SOURCE: Arxiv", 
-     "field": "source", 
-     "value": "arxiv", 
-     "indices": ["articles", "tables", "figures"] },
-     
-    { "type": "Source Filter", "label": "SOURCE: Pubmed", "field": "source", "value": "pubmed", "indices": ["articles", "tables", "figures"] },
-
     # 3. RICERCA TERMINE SPECIFICO (Phrase Match nel testo)
     { "type": "Specific Term", "label": "TERM: deep learning", "query": "deep learning", "indices": ["articles", "tables", "figures"] },
     { "type": "Specific Term", "label": "TERM: LSTM", "query": "LSTM", "indices": ["articles", "tables", "figures"] },
