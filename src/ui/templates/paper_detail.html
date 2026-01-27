@@ -111,6 +111,78 @@
             max-height: 400px;
             overflow-y: auto;
         }
+
+        /* NUOVO CSS PER LE TABELLE */
+        /* Stile base del contenitore tabella (chiuso) */
+        .table-container {
+            position: relative;
+            max-height: 250px; /* Altezza massima iniziale */
+            overflow: hidden;  /* Nasconde il resto */
+            transition: max-height 0.5s ease; /* Animazione fluida */
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Classe per quando è aperto */
+        .table-container.expanded {
+            max-height: 2000px; /* Un valore alto sufficiente per mostrare tutto */
+        }
+
+        /* Effetto sfumatura bianca in basso quando è chiuso */
+        .table-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(transparent, #ffffff);
+            pointer-events: none; /* Permette di cliccare attraverso se necessario */
+            transition: opacity 0.3s;
+        }
+
+        /* Nascondi la sfumatura quando è aperto */
+        .table-container.expanded .table-overlay {
+            opacity: 0;
+        }
+
+        /* Stile del bottone Toggle */
+        .toggle-btn {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            text-align: center;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-top: none;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0 0 0.5rem 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: #e2e8f0;
+        }
+        
+        /* Per assicurare che la tabella dentro si adatti */
+        .table-scroll-wrapper {
+            overflow-x: auto; /* Scroll orizzontale */
+            width: 100%;
+        }
+        
+        .table-scroll-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .table-scroll-wrapper th, .table-scroll-wrapper td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
     </style>
 </head>
 
@@ -123,10 +195,19 @@
                 style="background:#dbeafe; color:#1e40af; padding:0.25rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:700;">PAPER</span>
             <h1>{{ paper.title }}</h1>
             <div class="meta">
-                <i class="fa-regular fa-user"></i> {{ paper.authors|join(', ') }} &nbsp;•&nbsp;
-                <i class="fa-regular fa-calendar"></i> {{ paper.date[:10] }} &nbsp;•&nbsp;
-                <a href="{{ paper.html_url }}" target="_blank" style="color:var(--primary);">View on ArXiv <i
-                        class="fa-solid fa-external-link-alt"></i></a>
+                <i class="fa-regular fa-user"></i> {{ (paper.authors or [])|join(', ') }} &nbsp;•&nbsp;
+                
+                <i class="fa-regular fa-calendar"></i> 
+                {% if paper.date %}
+                    {{ paper.date[:10] }}
+                {% else %}
+                    N/A
+                {% endif %}
+                &nbsp;•&nbsp;
+                
+                <a href="{{ paper.html_url or '#' }}" target="_blank" style="color:var(--primary);">
+                    View Original Source <i class="fa-solid fa-external-link-alt"></i>
+                </a>
             </div>
 
             <h3>Abstract</h3>
@@ -137,9 +218,29 @@
         <div class="grid">
             {% for t in tables %}
             <div class="card">
-                <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">ID: {{ t.table_id }}</div>
+                <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">
+                    ID: {{ t.table_id }}
+                </div>
                 <div class="caption">{{ t.caption }}</div>
-                <pre>{{ t.body[:500] }}...</pre>
+
+                {% if t.html and t.html != "" %}
+                    <div class="table-wrapper-outer">
+                        
+                        <div class="table-container" id="tbl-container-{{ loop.index }}">
+                            <div class="table-scroll-wrapper">
+                                {{ t.html | safe }}
+                            </div>
+                            <div class="table-overlay" id="tbl-overlay-{{ loop.index }}"></div>
+                        </div>
+
+                        <button class="toggle-btn" onclick="toggleTable('{{ loop.index }}')" id="tbl-btn-{{ loop.index }}">
+                            Show Full Table <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                {% else %}
+                    <pre style="max-height: 250px; overflow:auto;">{{ t.body }}</pre>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -178,6 +279,24 @@
                     </a>
                 </div>
             `;
+        }
+
+        function toggleTable(index) {
+            const container = document.getElementById(`tbl-container-${index}`);
+            const btn = document.getElementById(`tbl-btn-${index}`);
+            
+            // Controlla se è già espanso
+            const isExpanded = container.classList.contains('expanded');
+            
+            if (isExpanded) {
+                // SE È APERTO -> CHIUDILO
+                container.classList.remove('expanded');
+                btn.innerHTML = 'Show Full Table <i class="fa-solid fa-chevron-down"></i>';
+            } else {
+                // SE È CHIUSO -> APRILO
+                container.classList.add('expanded');
+                btn.innerHTML = 'Show Less <i class="fa-solid fa-chevron-up"></i>';
+            }
         }
     </script>
 </body>

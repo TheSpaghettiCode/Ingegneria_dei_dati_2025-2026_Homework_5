@@ -1,4 +1,6 @@
 from elasticsearch import Elasticsearch, helpers
+from elasticsearch.helpers import BulkIndexError
+import json
 
 class IndexManager:
     """
@@ -36,8 +38,9 @@ class IndexManager:
                         "caption": {"type": "text"},
                         "body": {"type": "text"},
                         "mentions": {"type": "text"},
+                        "html": {"type": "text", "index": False},
                         "context_paragraphs": {"type": "text"},
-                         "source": {"type": "keyword"}
+                        "source": {"type": "keyword"}
                     }
                 }
             },
@@ -62,7 +65,7 @@ class IndexManager:
         """
         for index_name, config in self.indices.items():
             if not self.es.indices.exists(index=index_name):
-                self.es.indices.create(index=index_name, body=config)
+                self.es.indices.create(index=index_name, body=config, ignore=400)
                 print(f"Created index: {index_name}")
             else:
                 print(f"Index {index_name} already exists.")
@@ -75,32 +78,48 @@ class IndexManager:
             data (dict): Unified dictionary containing paper content and metadata.
         """
         actions = []
+
+        # --------------- AGGIUNTIVO  e MODIFICATO ------------------
+        # Ho messo il dizionario per source in article source 
+        raw_date = data.get("date") or data.get("published")
+        
+        article_source =  {
+                "paper_id": data["paper_id"],
+                "title": data.get("title", ""),
+                "authors": data.get("authors", []),
+                "date": raw_date,
+                "abstract": data.get("abstract", ""),
+                "full_text": data.get("full_text", ""),
+                "source": data.get("source", "arxiv")
+            }
+        
+        #controllo se la data è vuota
+        if data.get("date") and str(data["date"]).strip(): article_source["date"] = data["date"]
+        
         
         # 1. Prepare Article Document
         article_doc = {
             "_index": "articles",
             "_id": data["paper_id"],
-            "_source": {
-                "title": data.get("title", ""),
-                "authors": data.get("authors", []),
-                "date": data.get("date", ""),
-                "abstract": data.get("abstract", ""),
-                "full_text": data.get("full_text", ""),
-                "source": data.get("source", "arxiv")
-            }
+            "_source": article_source
         }
+
+        # -----------------------------------
+
         actions.append(article_doc)
         
         # 2. Prepare Table Documents
         for tbl in data.get("tables", []):
             table_doc = {
                 "_index": "tables",
+                "_id": tbl["table_id"],
                 "_source": {
                     "paper_id": data["paper_id"],
                     "table_id": tbl["table_id"],
                     "caption": tbl["caption"],
                     "body": tbl["body"],
                     "mentions": tbl["mentions"],
+                    "html": tbl.get("html", ""),
                     "context_paragraphs": tbl["context_paragraphs"],
                     "source": data.get("source", "arxiv")
                 }
@@ -111,6 +130,7 @@ class IndexManager:
         for fig in data.get("figures", []):
             fig_doc = {
                 "_index": "figures",
+                "_id": fig["figure_id"],
                 "_source": {
                     "paper_id": data["paper_id"],
                     "figure_id": fig["figure_id"],
@@ -125,5 +145,17 @@ class IndexManager:
             
         # Execute Bulk Indexing
         if actions:
-            helpers.bulk(self.es, actions)
-            # print(f"Indexed {len(actions)} documents for paper {data['paper_id']}")
+            try:
+                helpers.bulk(
+                    self.es, 
+                    actions, 
+                    chunk_size=20,       # <--- IMPORTANTE: Riduciamo a 50 documenti per volta (default è 500)
+                    request_timeout=60   # Diamo più tempo per rispondere
+                )
+                # print(f"Indexed {len(actions)} documents for paper {data['paper_id']}")
+            except BulkIndexError as e:
+                print(f"\nFATAL ERROR indicizzando {data['paper_id']}:")
+                # e.errors è una lista di dizionari con i dettagli di ogni fallimento
+                # Ne stampiamo solo uno per non intasare la console, di solito basta a capire
+                first_error = e.errors[0]
+                print(json.dumps(first_error, indent=2))

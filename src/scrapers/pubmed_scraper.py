@@ -25,8 +25,19 @@ HEADERS = {
     "Sec-Fetch-User": "?1",
     "Cache-Control": "max-age=0",
 }
+# Mappa per convertire mesi testuali in numeri (comune nell'XML)
+MONTH_MAP = {
+    "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "May": "05", "Jun": "06",
+    "Jul": "07", "Aug": "08", "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12",
+    "January": "01", "February": "02", "March": "03", "April": "04", "June": "06",
+    "July": "07", "August": "08", "September": "09", "October": "10", "November": "11", "December": "12"
+}
 
-def scrape_pubmed(query="cancer risk AND coffee consumption", max_results=500):
+
+
+
+
+def scrape_pubmed(query="ultra-processed foods AND cardiovascular risk", max_results=500):
     print(f"Searching PubMed (PMC) for: '{query}'...")
     
     # 1. Search in PMC (PubMed Central) for Open Access articles
@@ -79,16 +90,22 @@ def scrape_pubmed(query="cancer risk AND coffee consumption", max_results=500):
             title_tag = soup.find("article-title")
             title = title_tag.get_text(strip=True) if title_tag else f"Unknown Title ({pmc_id})"
             
-            # Authors
+                       
+            # 2. AUTORI
+            # Cerca nel gruppo dei contributori, filtrando solo gli autori
             authors = []
             contrib_group = soup.find("contrib-group")
             if contrib_group:
                 for contrib in contrib_group.find_all("contrib", {"contrib-type": "author"}):
-                    name = contrib.find("name")
-                    if name:
-                        surname = name.find("surname")
-                        given = name.find("given-names")
-                        full_name = f"{given.get_text(strip=True) if given else ''} {surname.get_text(strip=True) if surname else ''}".strip()
+                    name_tag = contrib.find("name")
+                    if name_tag:
+                        surname = name_tag.find("surname")
+                        given = name_tag.find("given-names")
+                        
+                        s_txt = surname.get_text(strip=True) if surname else ""
+                        g_txt = given.get_text(strip=True) if given else ""
+                        
+                        full_name = f"{g_txt} {s_txt}".strip()
                         if full_name:
                             authors.append(full_name)
             
@@ -96,24 +113,45 @@ def scrape_pubmed(query="cancer risk AND coffee consumption", max_results=500):
             abstract_tag = soup.find("abstract")
             abstract = abstract_tag.get_text(separator=' ', strip=True) if abstract_tag else ""
             
-            # Pub Date
-            pub_date = soup.find("pub-date", {"pub-type": "epub"}) or soup.find("pub-date", {"pub-type": "pmc-release"})
+            # 3. DATA (Logica avanzata)
+            # PubMed XML ha vari tipi di date. Le proviamo in ordine di preferenza.
+            # epub = data pubblicazione online (solitamente la più precisa)
+            # ppub = data pubblicazione cartacea
+            # pmc-release = data ingresso in archivio
+            pub_date = soup.find("pub-date", {"pub-type": "epub"}) or \
+                    soup.find("pub-date", {"pub-type": "ppub"}) or \
+                    soup.find("pub-date", {"pub-type": "pmc-release"})
             date_str = ""
             if pub_date:
-                year = pub_date.find("year")
-                year_str = year.get_text(strip=True) if year else ""
-                month = pub_date.find("month")
-                month_str = month.get_text(strip=True) if month else "01"
-                day = pub_date.find("day")
-                day_str = day.get_text(strip=True) if day else "01"
-                if year_str:
-                    date_str = f"{year_str}-{month_str.zfill(2)}-{day_str.zfill(2)}"
+                year_tag = pub_date.find("year")
+                if year_tag:
+                    year = year_tag.get_text(strip=True)
+                    
+                    # Gestione Mese (Numero o Testo)
+                    month_tag = pub_date.find("month")
+                    month = "01" # Default Gennaio
+                    if month_tag:
+                        m_text = month_tag.get_text(strip=True)
+                        # Se è numero ("10") lo usa, se è testo ("Oct") usa la mappa
+                        if m_text.isdigit():
+                            month = m_text.zfill(2)
+                        else:
+                            month = MONTH_MAP.get(m_text, "01")
+                    
+                    # Gestione Giorno
+                    day_tag = pub_date.find("day")
+                    day = day_tag.get_text(strip=True).zfill(2) if day_tag else "01"
+                    
+                    # Costruiamo la data ISO 8601
+                    date_str = f"{year}-{month}-{day}"
+
+
 
             metadata = {
                 "id": pmc_id,
                 "title": title,
                 "authors": authors,
-                "published": date_str,
+                "date": date_str,
                 "abstract": abstract,
                 "html_url": f"https://www.ncbi.nlm.nih.gov/pmc/articles/{pmc_id}/",
                 "source": "pubmed"
@@ -123,7 +161,8 @@ def scrape_pubmed(query="cancer risk AND coffee consumption", max_results=500):
             with open(meta_filepath, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=4)
             
-            print(f"  -> Downloaded XML.")
+            d_print = date_str if date_str else "NO DATE"
+            print(f"  -> Downloaded XML. Date: {d_print}")
             count += 1
             
             # Politeness sleep
@@ -136,7 +175,7 @@ def scrape_pubmed(query="cancer risk AND coffee consumption", max_results=500):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--query", type=str, default="cancer risk AND coffee consumption", help="Query")
+    parser.add_argument("--query", type=str, default="ultra-processed foods AND cardiovascular risk", help="Query")
     parser.add_argument("--max", type=int, default=500, help="Max results")
     args = parser.parse_args()
     

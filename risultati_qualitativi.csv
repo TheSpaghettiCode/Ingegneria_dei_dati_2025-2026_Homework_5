@@ -1,0 +1,16 @@
+Query,Index,Rank,Score,Paper_ID,Preview,Relevant
+cardiovascular risk ultra-processed foods,articles,1,41.062305,PMC8532572,"[TITLE] Ultra-processed Foods, Weight Gain, and Co-morbidity Risk",1
+cardiovascular risk ultra-processed foods,articles,2,39.696228,PMC10623817,"[TITLE] Associations of ultra-processed food consumption, circulating protein biomarkers, and risk of cardiovascular disease",1
+cardiovascular risk ultra-processed foods,articles,3,39.696228,PMC6538975,[TITLE] Ultra-processed food intake and risk of cardiovascular disease: prospective cohort study (NutriNet-Santé),1
+cardiovascular risk ultra-processed foods,articles,4,38.286022,PMC10948520,[TITLE] Ultra-processed foods and incident cardiovascular disease and hypertension in middle-aged women,1
+cardiovascular risk ultra-processed foods,articles,5,36.256477,PMC10882111,[TITLE] Ultra-processed food consumption and risk of cardiovascular events: a systematic review and dose-response meta-analysis,1
+transformer attention mechanism,articles,1,46.391376,2403.04743v2,[TITLE] Speech Emotion Recognition Via CNN-Transformer and Multidimensional Attention Mechanism,1
+transformer attention mechanism,articles,2,32.895546,2412.08683v1,[TITLE] Emotional Vietnamese Speech-Based Depression Diagnosis Using Dynamic Attention Mechanism,0
+transformer attention mechanism,articles,3,25.86481,2508.19528v1,[TITLE] FLASepformer: Efficient Speech Separation with Gated Focused Linear Attention Transformer,1
+transformer attention mechanism,articles,4,23.330809,2309.13476v2,[TITLE] Hierarchical attention interpretation: an interpretable speech-level transformer for bi-modal depression detection,0
+transformer attention mechanism,articles,5,23.330809,2306.08667v1,"[TITLE] When to Use Efficient Self Attention? Profiling Text, Speech and Image Transformer Variants",0
+confidence interval,tables,1,31.344059,PMC11462998,[TABLE] Hazard ratio (95% confidence interval) for type 2 diabetes incidence according to ultra-process food consumption...,1
+confidence interval,tables,2,30.746227,PMC9414627,"[TABLE] Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of raw food consumption....",1
+confidence interval,tables,3,30.746227,PMC9414627,"[TABLE] Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of boiled food consumption....",1
+confidence interval,tables,4,30.746227,PMC9414627,"[TABLE] Adjusted means (95% confidence interval), percentage difference, andpfor a linear trend across quintiles of roasted food consumption....",1
+confidence interval,tables,5,30.170773,PMC9669963,[TABLE] Crude and predicted mean and 95% confidence interval of dailyper capitapurchase of minimally processed and ultra-processed beverages....,1

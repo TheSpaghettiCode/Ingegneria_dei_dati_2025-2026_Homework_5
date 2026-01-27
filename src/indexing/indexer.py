@@ -54,11 +54,12 @@ def main():
             
             print(f"Processing {paper_id}...")
 
+            '''
             # Check if already indexed
             if indexer.es.exists(index="articles", id=paper_id):
                  print(f"  -> Article {paper_id} already indexed. Skipping.")
                  continue
-            
+            '''
             # --- 4. Extract Data ---
             try:
                 data = extractor.process_file(filepath)
@@ -73,7 +74,7 @@ def main():
                     # Update fields in 'data' with metadata, preferring metadata if available
                     data['title'] = meta.get('title', data.get('title'))
                     data['authors'] = meta.get('authors', [])
-                    data['date'] = meta.get('published', '')
+                    data['date'] = meta.get('date', '')
                     data['source'] = meta.get('source', data.get('source'))
             
             # Ensure separate identification if missing
